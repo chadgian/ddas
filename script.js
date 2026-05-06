@@ -86,7 +86,7 @@ function doLogin(){
   setTimeout(()=>{
 
     $.ajax({
-      url:'process/loginProcess.php ?u='+encodeURIComponent(u)+'&p='+encodeURIComponent(p)+'&r='+encodeURIComponent(ROLE),
+      url:'process/loginProcess.php?u='+encodeURIComponent(u)+'&p='+encodeURIComponent(p)+'&r='+encodeURIComponent(ROLE),
       method:'GET',
       success:function(data){
         document.getElementById('loginWrap').style.display='none';

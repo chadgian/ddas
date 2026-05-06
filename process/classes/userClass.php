@@ -4,7 +4,11 @@ class User{
   private $table = "users";
 
   public function __construct(){
-    include __DIR__. "/db.php";
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+      session_start();
+    }
+
+    require_once __DIR__ . "/../db.php";
     $this->conn = $conn;
   }
 
@@ -21,7 +25,7 @@ class User{
 
       $sql = "INSERT INTO {$this->table} (username, password, role) VALUES (?, ?, ?)";
       $stmt = $this->conn->prepare($sql);
-      $stmt->bind_param("ssss", $username, $hashedPassword, $role);
+      $stmt->bind_param("sss", $username, $hashedPassword, $role);
       if($stmt->execute()){
         return [
           "status" => true,
@@ -44,10 +48,10 @@ class User{
     }
   }
 
-  public function validateLogin($username, $password, $role){
-    $sql = "SELECT id, password, role FROM {$this->table} WHERE username = ? AND role = ?";
+  public function validateLogin($username, $password){
+    $sql = "SELECT id, password, role FROM {$this->table} WHERE username = ?";
     $stmt = $this->conn->prepare($sql);
-    $stmt->bind_param("ss", $username, $role);
+    $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
 
@@ -68,6 +72,7 @@ class User{
     }
 
     if (password_verify($password, $user['password'])) {
+      $this->saveLoginSession($user['id'], $user['role'], $username);
       return [
         "status" => true,
         "message" => "Login successful",
@@ -211,9 +216,9 @@ class User{
   }
 
   public function usernameExists($username, $excludedId = null){
-    $sql = "SELECT id FROM {$this->table} WHERE username = ?";
+    $sql = "SELECT userID FROM {$this->table} WHERE username = ?";
     if($excludedId !== null) {
-      $sql .= "AND id = ?";
+      $sql .= "AND userID = ?";
     }
     $sql .= " LIMIT 1";
 
@@ -229,5 +234,11 @@ class User{
     $result = $stmt->get_result();
 
     return $result->num_rows > 0;
+  }
+
+  public function saveLoginSession($userId, $role, $username){
+    $_SESSION['user_id'] = $userId;
+    $_SESSION['role'] = $role;
+    $_SESSION['username'] = $username;
   }
 }
