@@ -1,22 +1,17 @@
 <?php
+declare(strict_types=1);
 
-include __DIR__ . "/classes/userClass.php";
+require_once __DIR__ . '/classes/userClass.php';
 
-if ($_SERVER["REQUEST_METHOD"] === "GET") {
-  $username = $_GET["u"] ?? "";
-  $password = $_GET["p"] ?? "";
-  // $role = $_GET["r"] ?? "";
+$username = trim((string) ($_REQUEST['u'] ?? $_REQUEST['username'] ?? ''));
+$password = trim((string) ($_REQUEST['p'] ?? $_REQUEST['password'] ?? ''));
 
-  if (empty($username) || empty($password)) {
-    echo json_encode([
-      "status" => false,
-      "message" => "All fields are required"
-    ]);
-    exit;
-  }
-
-  $user = new User();
-  $result = $user->validateLogin($username, $password);
-
-  echo json_encode($result);
+if ($username === '' || $password === '') {
+    json_response([
+        'status' => false,
+        'message' => 'All fields are required',
+    ], 422);
 }
+
+$user = new User();
+json_response($user->validateLogin($username, $password));

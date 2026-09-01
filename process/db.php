@@ -1,12 +1,6 @@
 <?php
-$servername = "localhost";
-$username   = "root";
-$password   = "";
-$database   = "ddas_db";
+declare(strict_types=1);
 
-$conn = mysqli_connect($servername, $username, $password, $database);
+require_once __DIR__ . '/../core/helpers.php';
 
-// Check connection
-if (!$conn) {
-    die("Connection failed: " . mysqli_connect_error());
-}
+$pdo = db();

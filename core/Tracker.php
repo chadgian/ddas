@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/config.php';
+
 class Tracker {
     private $pdo;
 
@@ -16,6 +18,13 @@ class Tracker {
 
         // Avoid duplicate logging in same session
         if (session_status() === PHP_SESSION_NONE) {
+            $sessionPath = rtrim(STORAGE_ROOT_DEFAULT, '\\/') . DIRECTORY_SEPARATOR . 'sessions';
+            if (!is_dir($sessionPath)) {
+                @mkdir($sessionPath, 0775, true);
+            }
+            if (session_save_path() !== $sessionPath) {
+                session_save_path($sessionPath);
+            }
             if (!@session_start()) {
                 error_log('Visit tracking session start failed.');
             }

@@ -95,9 +95,10 @@
       <div class="form-group">
         <label for="role">Role:</label>
         <select id="role" name="role" required>
-          <option value="">-- Select Role --</option>
-          <option value="admin">Admin</option>
-          <option value="staff">Staff</option>
+          <option value="">-- Select Access Group --</option>
+          <option value="admin">PSED Admin</option>
+          <option value="internal">Internal</option>
+          <option value="agency">Agency</option>
         </select>
       </div>
       <button type="submit" name="create_user">Create Account</button>

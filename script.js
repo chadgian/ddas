@@ -1,840 +1,1647 @@
-﻿
 'use strict';
-// ═══════════════════════════════════════
-//  DATA
-// ═══════════════════════════════════════
-let ROLE = 'Admin', UNAME = 'admin.dela_cruz';
+
+const INTERNAL_ROLES = [
+  'Division Chief',
+  'Field Director',
+  'Division Personnel',
+  'FO Personnel',
+  'Management Committee',
+  'Divisions',
+];
+
+const PRIME_FOLDER_TREE = {
+  'Recruitment, Selection and Placement (RSP)': {
+    Governance: [
+      'Policy',
+      'Structure and Roles',
+      'Review Mechanism',
+      'Information and Communication (Use of Technology)',
+      'Information and Communication (Database Content)',
+    ],
+    'Talent Planning': ['Staffing and Workforce Plan'],
+    'Talent Sourcing': ['Recruitment Plan', 'Talent Attraction', 'EEOP'],
+    'Talent Selection and Placement': [
+      'Selection Criteria',
+      'Assessment and Selection Process',
+      'EEOP',
+      'Onboarding',
+    ],
+  },
+  'Learning and Development (L&D)': {
+    Governance: [
+      'Policy including EOP',
+      'Structure and Roles',
+      'Review Mechanisms',
+      'Information and Communication I',
+      'Information and Communication II',
+    ],
+    'Planning and M&E': ['L&D Planning', 'L&D Monitoring and Evaluation'],
+    Execution: [
+      'Design I',
+      'Design II',
+      'Development',
+      'Delivery',
+      'Learning Service Provider Management',
+    ],
+  },
+  'Performance Management (PM)': {
+    Governance: [
+      'Policy',
+      'Structure and Roles',
+      'Review Mechanisms',
+      'Information and Communication (Use of Technology)',
+      'Information and Communication (Database Content)',
+    ],
+    'Performance Planning and Commitment': ['Target Setting', 'Standard Setting'],
+    'Performance Monitoring and Coaching': ['Performance Tracking', 'Providing Performance Support'],
+    'Performance Review and Evaluation': [
+      'Performance Review and Evaluation',
+      'Calibrating Performance Assessments',
+    ],
+    'Development Planning': ['Development Planning Documents'],
+  },
+  'Rewards and Recognition (R&R)': {
+    Governance: [
+      'Policy including EOP',
+      'Structure and Roles',
+      'Review Mechanisms',
+      'Information and Communication I',
+      'Information and Communication II',
+    ],
+    Planning: ['Planning I', 'Planning II'],
+    Implementation: ['R&R Screening and Selection Criteria'],
+  },
+  'Other Documentary Requirements': {
+    'Other Documentary Requirements': ['Supplementary / Miscellaneous ER'],
+  },
+};
+
+const INDICATOR_PLACEHOLDER = 'Indicator pending configuration';
+const INDICATOR_CODE_PLACEHOLDER = 'PENDING-CODE';
+const SAMPLE_INDICATOR_CODES = ['SAMPLE-01', 'SAMPLE-02', 'SAMPLE-03'];
+
+let ROLE = 'PSED Admin';
+let UNAME = 'admin.dela_cruz';
+let curDocId = null;
+let editUserId = null;
+let confirmCB = null;
+let selFile = null;
+let primeFile = null;
+let primeAgencyFilter = '';
+let srchRes = [];
+let srchPage = 1;
+let logsPage = 1;
+let SETTINGS = {
+  storage_root: '',
+  internal_subdir: 'internal',
+  prime_subdir: 'prime_hrm',
+};
+const PP = 5;
+const LP = 8;
 
 const DOCS = [
-  {id:'DOC-2025-0891',title:'Iloilo City Supplemental Budget 2025-Q2',src:'Iloilo City',cat:'Budget & Finance',date:'2025-02-14',status:'active',size:'2.4 MB',pages:12,ocr:'Supplemental Budget Resolution No. 2025-SB-042\nAmount: PHP 45,234,000.00\nPurpose: Capital Outlay for Infrastructure Projects\nApproved by: City Council, February 10, 2025'},
-  {id:'DOC-2025-0890',title:'Resolution No. 2025-089 Road Infrastructure',src:'Province of Iloilo',cat:'Resolutions',date:'2025-02-13',status:'processing',size:'1.8 MB',pages:4,ocr:'RESOLUTION NO. 2025-089\nSeries of 2025\nWHEREAS the Sangguniang Panlalawigan has deliberated upon matters pertaining to road infrastructure improvements in the province...'},
-  {id:'DOC-2025-0889',title:'Barangay Ordinance Series 2025 — Waste Management',src:'Municipality of Oton',cat:'Ordinances',date:'2025-02-12',status:'active',size:'3.1 MB',pages:8,ocr:'ORDINANCE NO. 2025-03\nAn ordinance establishing a comprehensive solid waste management program...\nSection 1: This ordinance shall be known as the Oton Solid Waste Management Ordinance of 2025.'},
-  {id:'DOC-2025-0888',title:'Administrative Order No. 14 — Personnel Guidelines',src:'Province of Iloilo',cat:'Administrative',date:'2025-02-11',status:'active',size:'1.2 MB',pages:6,ocr:'ADMINISTRATIVE ORDER NO. 14\nSeries of 2025\nSUBJECT: Guidelines on Work-from-Home Arrangements for Provincial Government Employees...'},
-  {id:'DOC-2025-0887',title:'Building Permit Application Batch Feb 2025',src:'Municipality of Pavia',cat:'Permits',date:'2025-02-10',status:'active',size:'5.7 MB',pages:24,ocr:'BUILDING PERMIT APPLICATIONS\nBatch Reference: BP-PAV-2025-FEB\nTotal Applications: 24\nProcessed by: Pavia Engineering Office...'},
-  {id:'DOC-2025-0886',title:'Correspondence — DILG Compliance Report',src:'Municipality of Leganes',cat:'Correspondence',date:'2025-02-09',status:'pending',size:'0.9 MB',pages:3,ocr:'Re: Full Disclosure Policy Compliance Report Q4 2024\nTo: DILG Regional Office VI\nThis office certifies compliance with RA 9184...'},
-  {id:'DOC-2024-0712',title:'Annual Financial Report FY 2024',src:'Iloilo City',cat:'Budget & Finance',date:'2025-01-15',status:'archived',size:'8.2 MB',pages:56,ocr:'ANNUAL FINANCIAL REPORT\nFiscal Year 2024\nIloilo City Government\nTotal Revenue: PHP 2,345,678,000.00\nTotal Expenditure: PHP 2,112,344,000.00'},
-  {id:'DOC-2024-0701',title:'Resolution No. 2024-201 Environmental Protection',src:'Province of Iloilo',cat:'Resolutions',date:'2025-01-10',status:'archived',size:'1.5 MB',pages:5,ocr:'RESOLUTION NO. 2024-201\nRESOLUTION APPROVING THE PROVINCIAL ENVIRONMENTAL MANAGEMENT PLAN 2024-2029...'},
-  {id:'DOC-2023-0145',title:'Budget Execution Report FY 2023',src:'Province of Iloilo',cat:'Budget & Finance',date:'2024-03-01',status:'archived',size:'4.3 MB',pages:32,ocr:'BUDGET EXECUTION REPORT\nFiscal Year 2023\nProvince of Iloilo...'},
+  {
+    id: 'DOC-2026-0101',
+    title: 'Records Retention Memorandum',
+    src: 'PSED',
+    docType: 'Memorandum',
+    date: '2026-05-04',
+    status: 'active',
+    size: '1.4 MB',
+    pages: 5,
+    audience: ['All Personnel'],
+    retention: '5 Years',
+    notes: 'Implementation guidance for document retention and repository filing.',
+    details: {
+      memoNumber: 'MEMO-2026-014',
+      addressee: 'All Personnel',
+      subject: 'Records Retention and Filing Workflow',
+      memoDate: '2026-05-02',
+      memoAuthor: 'Juan Dela Cruz',
+    },
+  },
+  {
+    id: 'DOC-2026-0100',
+    title: 'Opinion on Leave Monetization',
+    src: 'Legal Division',
+    docType: 'Opinion/Query',
+    date: '2026-05-02',
+    status: 'active',
+    size: '0.9 MB',
+    pages: 3,
+    audience: ['Division Chief', 'Field Director', 'Management Committee'],
+    retention: 'Permanent',
+    notes: 'Legal interpretation on leave monetization for retiring personnel.',
+    details: {
+      addressee: 'Field Director',
+      subject: 'Leave Monetization Request',
+      opinionDate: '2026-04-29',
+    },
+  },
+  {
+    id: 'DOC-2026-0098',
+    title: 'Quarterly Operational Report',
+    src: 'Field Office',
+    docType: 'Report',
+    date: '2026-04-28',
+    status: 'active',
+    size: '2.7 MB',
+    pages: 12,
+    audience: ['Division Personnel', 'FO Personnel'],
+    retention: '3 Years',
+    notes: 'Quarterly accomplishments and operational updates.',
+    details: {},
+  },
+  {
+    id: 'DOC-2026-0092',
+    title: 'Committee Resolution on Process Review',
+    src: 'Regional Office',
+    docType: 'Resolution',
+    date: '2026-04-19',
+    status: 'archived',
+    size: '1.1 MB',
+    pages: 4,
+    audience: ['Management Committee'],
+    retention: '10 Years',
+    notes: 'Resolution documenting process review findings and next steps.',
+    details: {},
+  },
 ];
 
 const USERS = [
-  {id:1,name:'Juan Dela Cruz',user:'admin.dela_cruz',dept:'PSED — Admin Office',role:'Admin',email:'jdc@psed.gov.ph',status:'Active',av:'linear-gradient(135deg,#ef4444,#b91c1c)',ini:'JD',perms:['Upload','Edit','Delete','View','Archive','Manage Users','Requirements']},
-  {id:2,name:'Maria Santos',user:'maria.santos',dept:'Budget & Finance',role:'Staff',email:'ms@psed.gov.ph',status:'Active',av:'linear-gradient(135deg,#0ea5e9,#0369a1)',ini:'MS',perms:['Upload','Edit','View','Archive','Submit Compliance']},
-  {id:3,name:'Pedro Garcia',user:'pedro.garcia',dept:'Legal Division',role:'Staff',email:'pg@psed.gov.ph',status:'Active',av:'linear-gradient(135deg,#10b981,#047857)',ini:'PG',perms:['Upload','Edit','View','Archive','Submit Compliance']},
-  {id:4,name:'Ana Reyes',user:'ana.reyes',dept:'Records Division',role:'Viewer',email:'ar@psed.gov.ph',status:'Active',av:'linear-gradient(135deg,#64748b,#334155)',ini:'AR',perms:['View','Download']},
-  {id:5,name:'Luis Mendoza',user:'luis.mendoza',dept:'ICT Division',role:'Admin',email:'lm@psed.gov.ph',status:'Active',av:'linear-gradient(135deg,#8b5cf6,#6d28d9)',ini:'LM',perms:['Upload','Edit','Delete','View','Archive','Manage Users','Requirements']},
-  {id:6,name:'Rosa Bautista',user:'rosa.bautista',dept:'Planning Office',role:'Viewer',email:'rb@psed.gov.ph',status:'Active',av:'linear-gradient(135deg,#f59e0b,#b45309)',ini:'RB',perms:['View','Download']},
+  {
+    id: 1,
+    name: 'Juan Dela Cruz',
+    user: 'admin.dela_cruz',
+    dept: 'PSED',
+    agency: '',
+    access: 'PSED Admin',
+    roles: ['Division Chief', 'Management Committee'],
+    email: 'admin@psed.gov.ph',
+    status: 'Active',
+    av: 'linear-gradient(135deg,#ef4444,#b91c1c)',
+    ini: 'JD',
+    perms: ['Internal Upload', 'Repository Access', 'User Management', 'Notifications', 'Logs'],
+  },
+  {
+    id: 2,
+    name: 'Maricel Santos',
+    user: 'maricel.santos',
+    dept: 'PSED',
+    agency: '',
+    access: 'Internal',
+    roles: ['Division Personnel', 'Divisions'],
+    email: 'maricel.santos@psed.gov.ph',
+    status: 'Active',
+    av: 'linear-gradient(135deg,#0ea5e9,#0369a1)',
+    ini: 'MS',
+    perms: ['Internal Upload', 'Repository Access', 'Notifications'],
+  },
+  {
+    id: 3,
+    name: 'Ramon Garcia',
+    user: 'ramon.garcia',
+    dept: 'Field Office',
+    agency: '',
+    access: 'Internal',
+    roles: ['FO Personnel', 'Field Director'],
+    email: 'ramon.garcia@psed.gov.ph',
+    status: 'Active',
+    av: 'linear-gradient(135deg,#10b981,#047857)',
+    ini: 'RG',
+    perms: ['Internal Upload', 'Repository Access'],
+  },
+  {
+    id: 4,
+    name: 'CGO Bago Agency Account',
+    user: 'cgo.bago',
+    dept: 'Agency',
+    agency: 'CGO Bago',
+    access: 'Agency',
+    roles: [],
+    email: 'cgo.bago@agency.gov.ph',
+    status: 'Active',
+    av: 'linear-gradient(135deg,#f59e0b,#b45309)',
+    ini: 'CB',
+    perms: ['PRIME-HRM Upload'],
+  },
+];
+
+const PRIME_SUBMISSIONS = [
+  {
+    id: 'ER-2026-021',
+    agency: 'CGO Bago',
+    account: 'cgo.bago',
+    originalFileName: 'evidence-package.pdf',
+    savedFileName: 'PENDING-CODE-evidence-package.pdf',
+    folderPath: 'CGO Bago / Recruitment, Selection and Placement (RSP) / Governance / Policy',
+    coreArea: 'Recruitment, Selection and Placement (RSP)',
+    pillar: 'Governance',
+    element: 'Policy',
+    indicator: INDICATOR_PLACEHOLDER,
+    indicatorCode: INDICATOR_CODE_PLACEHOLDER,
+    submitted: '2026-05-06',
+    status: 'submitted',
+    size: '1.8 MB',
+  },
+  {
+    id: 'ER-2026-020',
+    agency: 'CGO Bago',
+    account: 'cgo.bago',
+    originalFileName: 'ld-planning.pdf',
+    savedFileName: 'PENDING-CODE-ld-planning.pdf',
+    folderPath: 'CGO Bago / Learning and Development (L&D) / Planning and M&E / L&D Planning',
+    coreArea: 'Learning and Development (L&D)',
+    pillar: 'Planning and M&E',
+    element: 'L&D Planning',
+    indicator: INDICATOR_PLACEHOLDER,
+    indicatorCode: INDICATOR_CODE_PLACEHOLDER,
+    submitted: '2026-05-03',
+    status: 'received',
+    size: '0.7 MB',
+  },
+  {
+    id: 'ER-2026-019',
+    agency: 'CGO Bago',
+    account: 'cgo.bago',
+    originalFileName: 'pm-review.pdf',
+    savedFileName: 'PENDING-CODE-pm-review.pdf',
+    folderPath: 'CGO Bago / Performance Management (PM) / Performance Review and Evaluation / Performance Review and Evaluation',
+    coreArea: 'Performance Management (PM)',
+    pillar: 'Performance Review and Evaluation',
+    element: 'Performance Review and Evaluation',
+    indicator: INDICATOR_PLACEHOLDER,
+    indicatorCode: INDICATOR_CODE_PLACEHOLDER,
+    submitted: '2026-05-01',
+    status: 'under review',
+    size: '2.1 MB',
+  },
 ];
 
 const LOGS = [
-  {act:'Uploaded DOC-2025-0891',usr:'maria.santos',type:'Upload',time:'2025-02-15 09:12',ico:'📤',bg:'rgba(14,165,233,.14)'},
-  {act:'Downloaded DOC-2024-0712 (Annual Report)',usr:'pedro.garcia',type:'Download',time:'2025-02-15 08:54',ico:'📥',bg:'rgba(16,185,129,.14)'},
-  {act:'Viewed DOC-2025-0890 (Resolution)',usr:'ana.reyes',type:'View',time:'2025-02-15 08:30',ico:'👁',bg:'rgba(100,116,139,.14)'},
-  {act:'Archived DOC-2024-0701',usr:'admin.dela_cruz',type:'Archive',time:'2025-02-14 17:22',ico:'📦',bg:'rgba(245,158,11,.14)'},
-  {act:'User login: rosa.bautista',usr:'rosa.bautista',type:'Login',time:'2025-02-14 16:45',ico:'🔑',bg:'rgba(139,92,246,.14)'},
-  {act:'Deleted DOC-2023-0112 (Expired)',usr:'admin.dela_cruz',type:'Delete',time:'2025-02-14 15:10',ico:'🗑',bg:'rgba(239,68,68,.14)'},
-  {act:'OCR Completed for DOC-2025-0889',usr:'SYSTEM',type:'Upload',time:'2025-02-14 14:33',ico:'🔎',bg:'rgba(14,165,233,.1)'},
-  {act:'Edited metadata DOC-2025-0888',usr:'luis.mendoza',type:'Upload',time:'2025-02-14 13:05',ico:'✏️',bg:'rgba(139,92,246,.1)'},
-  {act:'Downloaded DOC-2025-0887',usr:'pedro.garcia',type:'Download',time:'2025-02-14 11:44',ico:'📥',bg:'rgba(16,185,129,.14)'},
-  {act:'New user added: Rosa Bautista',usr:'admin.dela_cruz',type:'Upload',time:'2025-02-13 10:20',ico:'👤',bg:'rgba(14,165,233,.1)'},
-];
-
-const OCR_Q = [
-  {id:'DOC-2025-0890',title:'Resolution No. 2025-089 Road Infrastructure',src:'Province of Iloilo',date:'2025-02-13',status:'processing',prog:67,acc:'—'},
-  {id:'DOC-2025-0892',title:'Municipal Finance Statement Q1',src:'Municipality of Zarraga',date:'2025-02-15',status:'pending',prog:0,acc:'—'},
-  {id:'DOC-2025-0893',title:'Barangay Assembly Minutes Feb',src:'Iloilo City',date:'2025-02-15',status:'pending',prog:0,acc:'—'},
-  {id:'DOC-2025-0894',title:'Contract for Road Widening Project',src:'Province of Iloilo',date:'2025-02-14',status:'failed',prog:0,acc:'—'},
-  {id:'DOC-2025-0895',title:'Health Certificate Batch February',src:'Municipality of Cabatuan',date:'2025-02-14',status:'failed',prog:0,acc:'—'},
-];
-
-let REQS = [
-  {id:'REQ-2025-001',title:'Quarterly Budget Execution Report Q1 2025',cat:'Financial',pri:'High',deadline:'2025-03-31',assignedTo:'maria.santos',assignedName:'Maria Santos',desc:'Submit the complete Budget Execution Report (BER) for Q1 2025 covering January to March. Include all obligated amounts, disbursements, and unreleased allotments. Attach certified copies of all supporting documents.',docTypes:['Budget Execution Report','Disbursement Voucher','SARO','Allotment Release Order'],reminder:'all',status:'pending',subs:[{docId:'DOC-2025-0887',title:'Partial BER Q1 Draft',type:'Budget Execution Report',by:'maria.santos',at:'2025-02-20',status:'rejected',remarks:'Incomplete — missing SARO attachment.'}]},
-  {id:'REQ-2025-002',title:'Annual Compliance Report — RA 9184 Procurement',cat:'Compliance',pri:'High',deadline:'2025-02-28',assignedTo:'pedro.garcia',assignedName:'Pedro Garcia',desc:'Submit the Annual Procurement Compliance Report as required under RA 9184 and its IRR. Include all BAC resolutions, procurement activities, and PhilGEPS postings for CY 2024.',docTypes:['BAC Resolution','PhilGEPS Posting Proof','Procurement Monitoring Report','Annual Procurement Plan'],reminder:'all',status:'overdue',subs:[]},
-  {id:'REQ-2025-003',title:'Organizational Performance Indicator Framework (OPIF)',cat:'Administrative',pri:'Medium',deadline:'2025-04-15',assignedTo:'maria.santos',assignedName:'Maria Santos',desc:'Submit the updated OPIF targets and accomplishments for FY 2024. Coordinate with the Planning Office for data consolidation. Use the prescribed DBM format.',docTypes:['OPIF Form','Accomplishment Report','Planning Data Sheet'],reminder:'7',status:'pending',subs:[]},
-  {id:'REQ-2025-004',title:'Full Disclosure Policy — Q4 2024 Posting',cat:'Legal',pri:'Medium',deadline:'2025-01-31',assignedTo:'pedro.garcia',assignedName:'Pedro Garcia',desc:'Post and submit proof of compliance with the Full Disclosure Policy (FDP) for Q4 2024. All required documents must be posted on the LGU website and submitted to DILG.',docTypes:['FDP Compliance Certification','Website Screenshot','Transmittal Letter'],reminder:'3',status:'approved',subs:[{docId:'DOC-2025-0886',title:'FDP Q4 2024 Compliance Package',type:'FDP Compliance Certification',by:'pedro.garcia',at:'2025-01-28',status:'approved',remarks:'Complete and compliant.'}]},
-  {id:'REQ-2025-005',title:'Monthly Financial Report — January 2025',cat:'Reports',pri:'Low',deadline:'2025-02-15',assignedTo:'maria.santos',assignedName:'Maria Santos',desc:'Submit the Monthly Financial Report (MFR) for January 2025 using the prescribed COA format. Include trial balance and bank reconciliation statement.',docTypes:['Monthly Financial Report','Trial Balance','Bank Reconciliation Statement'],reminder:'1',status:'submitted',subs:[{docId:'DOC-2025-0888',title:'MFR January 2025',type:'Monthly Financial Report',by:'maria.santos',at:'2025-02-14',status:'submitted',remarks:'Submitted on time, awaiting PSED review.'}]},
+  { act: 'Uploaded DOC-2026-0101', usr: 'admin.dela_cruz', type: 'Upload', time: '2026-05-06 09:12', ico: '📤', bg: 'rgba(14,165,233,.14)' },
+  { act: 'Submitted ER-2026-021', usr: 'cgo.bago', type: 'Upload', time: '2026-05-06 08:41', ico: '📎', bg: 'rgba(16,185,129,.14)' },
+  { act: 'Viewed DOC-2026-0100', usr: 'maricel.santos', type: 'View', time: '2026-05-05 16:30', ico: '👁', bg: 'rgba(100,116,139,.14)' },
+  { act: 'Sent notification to All Personnel', usr: 'admin.dela_cruz', type: 'Settings', time: '2026-05-05 14:12', ico: '📣', bg: 'rgba(139,92,246,.14)' },
 ];
 
 let NOTIFS = [
-  {txt:'OCR Processing complete for DOC-2025-0891',time:'2 min ago',col:'var(--accent)'},
-  {txt:'New document uploaded by Maria Santos',time:'18 min ago',col:'var(--accent)'},
-  {txt:'DOC-2023-0145 approaching retention limit',time:'1 hr ago',col:'var(--yellow)'},
+  { txt: 'New repository upload: Records Retention Memorandum', time: '10 min ago', col: 'var(--accent)' },
+  { txt: 'PRIME-HRM submission received from CGO Bago', time: '35 min ago', col: 'var(--green)' },
+  { txt: 'Restricted document updated for Management Committee', time: '1 hr ago', col: 'var(--yellow)' },
 ];
 
-// State
-let curDocId=null,curReqId=null,editReqId=null,editUserId=null,confirmCB=null,vrFile=null,selFile=null;
-let archTab='all',archSort='desc',archPage=1;
-let srchRes=[],srchPage=1,logsPage=1;
-const PP=5,LP=8,AP=6;
-
-// ═══════════════════════════════════════
-//  LOGIN
-// ═══════════════════════════════════════
-function pickRole(el,role){document.querySelectorAll('.role-chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active'); ROLE=role;
-  const hints={Admin:'admin.dela_cruz',Staff:'maria.santos',Viewer:'ana.reyes'};
-  document.getElementById('lusr').value=hints[role];
+function replaceArray(target, source) {
+  target.length = 0;
+  target.push(...source);
 }
-function doLogin(){
-  const u=document.getElementById('lusr').value.trim(), p=document.getElementById('lpwd').value.trim();
-  if(!u||!p){document.getElementById('loginErr').style.display='block';return;}
-  UNAME=u;
-  document.getElementById('loginErr').style.display='none';
-  document.getElementById('loginWrap').style.transition='opacity .4s';
-  document.getElementById('loginWrap').style.opacity='0';
-  addLog(`Login: ${u}`,u,'Login','🔑','rgba(139,92,246,.14)');
-  setTimeout(()=>{
 
-    $.ajax({
-      url:'process/loginProcess.php?u='+encodeURIComponent(u)+'&p='+encodeURIComponent(p)+'&r='+encodeURIComponent(ROLE),
-      method:'GET',
-      success:function(data){
-        document.getElementById('loginWrap').style.display='none';
-        document.getElementById('app').style.display='block';initApp();
-        const res=JSON.parse(data);
+function getAvatarGradient(access) {
+  if (access === 'PSED Admin') return 'linear-gradient(135deg,#ef4444,#b91c1c)';
+  if (access === 'Agency') return 'linear-gradient(135deg,#10b981,#047857)';
+  return 'linear-gradient(135deg,#0ea5e9,#0369a1)';
+}
 
-        if(res.success){
-          toast('✅','Login Successful',`Welcome back, ${UNAME.split('.')[0].toUpperCase()}!`);
-        } else {
-          toast('⚠️','Login Failed',res.message||'Invalid credentials or role. Please try again.');
-          // Reset to login state
-          document.getElementById('loginWrap').style.display='block';
-          document.getElementById('app').style.display='none';
-        }
-      }
+function decorateUser(user) {
+  return {
+    ...user,
+    av: user.av || getAvatarGradient(user.access),
+    ini: user.ini || (user.name || user.user || 'U').split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase(),
+    perms: user.perms || buildPermissions(user.access),
+  };
+}
+
+function decorateLog(log) {
+  const map = {
+    Upload: { ico: '📤', bg: 'rgba(14,165,233,.14)' },
+    Update: { ico: '✏', bg: 'rgba(139,92,246,.14)' },
+    Delete: { ico: '🗑', bg: 'rgba(239,68,68,.14)' },
+    View: { ico: '👁', bg: 'rgba(100,116,139,.14)' },
+    Login: { ico: '🔑', bg: 'rgba(139,92,246,.14)' },
+    Logout: { ico: '🚪', bg: 'rgba(100,116,139,.14)' },
+    Settings: { ico: '⚙', bg: 'rgba(100,116,139,.14)' },
+    Download: { ico: '📥', bg: 'rgba(16,185,129,.14)' },
+  };
+  const visual = map[log.type] || { ico: '📝', bg: 'rgba(100,116,139,.14)' };
+  return { ...log, ...visual };
+}
+
+async function apiJson(url, options = {}) {
+  const response = await fetch(url, options);
+  const data = await response.json();
+  if (!response.ok || data.status === false) {
+    throw new Error(data.message || 'Request failed.');
+  }
+  return data;
+}
+
+function applySettingsToForm() {
+  if (document.getElementById('storageRoot')) document.getElementById('storageRoot').value = SETTINGS.storage_root || '';
+  if (document.getElementById('internalSubdir')) document.getElementById('internalSubdir').value = SETTINGS.internal_subdir || 'internal';
+  if (document.getElementById('primeSubdir')) document.getElementById('primeSubdir').value = SETTINGS.prime_subdir || 'prime_hrm';
+}
+
+function hydrateState(data) {
+  if (!data.authenticated || !data.user) {
+    document.getElementById('loginWrap').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    return;
+  }
+
+  ROLE = data.user.access;
+  UNAME = data.user.user;
+  SETTINGS = { ...SETTINGS, ...(data.settings || {}) };
+
+  replaceArray(DOCS, data.documents || []);
+  replaceArray(PRIME_SUBMISSIONS, data.prime_submissions || []);
+  replaceArray(USERS, (data.users && data.users.length ? data.users : [data.user]).map(decorateUser));
+  if (!USERS.find(user => user.user === data.user.user)) USERS.unshift(decorateUser(data.user));
+  replaceArray(LOGS, (data.logs || []).map(decorateLog));
+
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  initApp();
+  applySettingsToForm();
+}
+
+async function hydrateFromServer(showToast = false) {
+  try {
+    const data = await apiJson('process/bootstrapData.php');
+    hydrateState(data);
+    if (showToast) toast('↺', 'Refreshed', 'Page data updated');
+  } catch (error) {
+    toast('⚠', 'Load Failed', error.message);
+  }
+}
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getCurrentUser() {
+  return USERS.find(user => user.user === UNAME) || null;
+}
+
+function getPrimeAgencyName() {
+  const user = getCurrentUser();
+  return user?.agency || user?.name || 'Agency';
+}
+
+function normalizeAccess(role, username) {
+  const local = USERS.find(user => user.user === username);
+  if (local) return local.access;
+  const mapped = String(role || '').toLowerCase();
+  if (mapped === 'admin' || mapped === 'psed admin') return 'PSED Admin';
+  if (mapped === 'agency' || mapped === 'external') return 'Agency';
+  if (mapped === 'internal') return 'Internal';
+  return 'Internal';
+}
+
+function ensureRuntimeUser(username, access) {
+  let user = USERS.find(item => item.user === username);
+  if (user) return user;
+  const name = username.replace(/\./g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+  user = {
+    id: USERS.length + 1,
+    name,
+    user: username,
+    dept: access === 'Agency' ? 'Agency' : 'PSED',
+    agency: access === 'Agency' ? name : '',
+    access,
+    roles: access === 'Internal' ? ['Division Personnel'] : [],
+    email: `${username}@psed.gov.ph`,
+    status: 'Active',
+    av: 'linear-gradient(135deg,#64748b,#334155)',
+    ini: name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase(),
+    perms: buildPermissions(access),
+  };
+  USERS.push(user);
+  return user;
+}
+
+async function doLogin() {
+  const username = document.getElementById('lusr').value.trim();
+  const password = document.getElementById('lpwd').value.trim();
+  if (!username || !password) {
+    document.getElementById('loginErr').style.display = 'block';
+    return;
+  }
+  document.getElementById('loginErr').style.display = 'none';
+  try {
+    const form = new URLSearchParams({ username, password });
+    const result = await apiJson('process/loginProcess.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body: form.toString(),
     });
-  },400);
+    await hydrateFromServer();
+    const firstName = (result.user?.full_name || username).split(' ')[0];
+    toast('✅', 'Login Successful', `Welcome back, ${firstName}!`);
+  } catch (error) {
+    document.getElementById('loginErr').style.display = 'block';
+    toast('⚠', 'Login Failed', error.message || 'Invalid username or password.');
+  }
 }
-function confirmLogout(){
-  showConfirm('Sign Out','⬅️','Are you sure you want to sign out?',()=>{
-    addLog(`Logout: ${UNAME}`,UNAME,'Logout','🚪','rgba(100,116,139,.1)');
-    location.reload();
+
+function confirmLogout() {
+  showConfirm('Sign Out', '⬅', 'Are you sure you want to sign out?', () => {
+    fetch('process/logoutProcess.php', { method: 'POST' })
+      .then(() => location.reload())
+      .catch(() => location.reload());
   });
 }
 
-// ═══════════════════════════════════════
-//  INIT & PERMISSIONS
-// ═══════════════════════════════════════
-function initApp(){
-  const ini=UNAME.split('.').map(s=>s[0].toUpperCase()).join('').slice(0,2);
-  const roleColors={Admin:'linear-gradient(135deg,#ef4444,#b91c1c)',Staff:'linear-gradient(135deg,#0ea5e9,#0369a1)',Viewer:'linear-gradient(135deg,#64748b,#334155)'};
-  const roleLabels={Admin:'Administrator',Staff:'Staff — Agency',Viewer:'Viewer'};
-  document.getElementById('sbAv').style.background=roleColors[ROLE];
-  document.getElementById('sbAv').textContent=ini;
-  document.getElementById('sbName').textContent=UNAME.replace('.',' ').replace(/\b\w/g,c=>c.toUpperCase());
-  document.getElementById('sbRole').textContent=roleLabels[ROLE];
-  document.getElementById('sbRole').style.color=ROLE==='Admin'?'var(--red)':ROLE==='Staff'?'var(--accent)':'var(--text3)';
+function initApp() {
+  const user = getCurrentUser() || ensureRuntimeUser(UNAME, ROLE);
+  const roleColors = {
+    'PSED Admin': 'linear-gradient(135deg,#ef4444,#b91c1c)',
+    Internal: 'linear-gradient(135deg,#0ea5e9,#0369a1)',
+    Agency: 'linear-gradient(135deg,#10b981,#047857)',
+  };
 
+  document.getElementById('sbAv').style.background = user.av || roleColors[user.access];
+  document.getElementById('sbAv').textContent = user.ini;
+  document.getElementById('sbName').textContent = user.access === 'Agency' ? (user.agency || user.name) : user.name;
+  document.getElementById('sbRole').textContent = user.access === 'Agency' ? 'Agency Account' : (user.access === 'PSED Admin' ? 'System Administrator' : user.access);
+  document.getElementById('sbRole').style.color = user.access === 'PSED Admin' ? 'var(--red)' : user.access === 'Internal' ? 'var(--accent)' : 'var(--green)';
+
+  document.getElementById('profName').value = user.name;
+  document.getElementById('profUser').value = user.user;
+  document.getElementById('profEmail').value = user.email;
+  renderRoleCheckboxes('mRolesBox');
+  renderRoleCheckboxes('nuRolesBox');
+  renderRoleCheckboxes('euRolesBox');
+  renderDocTypeFields();
+  renderPrimeFolderSelectors();
+  toggleUserRoleFields('nu');
+  toggleUserRoleFields('eu');
   applyPermissions();
   buildAll();
+  nav('dashboard');
 }
 
-function applyPermissions(){
-  const isAdmin=ROLE==='Admin', isViewer=ROLE==='Viewer', isStaff=ROLE==='Staff';
-  // Nav visibility — unified sidebar, just hide what's not allowed
-  if(isViewer){
-    ['n-upload','n-ocr','n-access','n-logs','n-requirements'].forEach(id=>{
-      const el=document.getElementById(id); if(el) el.style.display='none';
-    });
-    document.getElementById('tbUploadBtn').style.display='none';
+function applyPermissions() {
+  const blockedByRole = {
+    'PSED Admin': [],
+    Internal: ['requirements', 'access'],
+    Agency: ['upload', 'search', 'logs', 'access', 'settings'],
+  };
+  window.BLOCKED = blockedByRole;
+
+  document.getElementById('tbUploadBtn').style.display = ROLE === 'Agency' ? 'none' : '';
+  document.getElementById('n-access').style.display = ROLE === 'PSED Admin' ? '' : 'none';
+  document.getElementById('n-logs').style.display = ROLE === 'Agency' ? 'none' : '';
+  document.getElementById('tbQ').disabled = ROLE === 'Agency';
+  document.getElementById('tbQ').placeholder = ROLE === 'Agency' ? 'PRIME-HRM access only' : 'Quick search repository…';
+  document.getElementById('dash-acts').innerHTML = ROLE === 'Agency'
+    ? `<button class="btn-add" onclick="nav('requirements')">+ Submit PRIME-HRM ER</button>`
+    : `<button class="btn-add" onclick="nav('upload')">+ Upload Document</button>`;
+  document.getElementById('dash-new-btn').style.display = ROLE === 'Agency' ? 'none' : '';
+  ['storageRoot', 'internalSubdir', 'primeSubdir'].forEach(id => {
+    const field = document.getElementById(id);
+    if (field) field.disabled = ROLE !== 'PSED Admin';
+  });
+
+  const internalParent = document.getElementById('n-internal-parent');
+  const internalMenu = document.getElementById('n-internal-menu');
+  const workspaceGroup = document.getElementById('navWorkspaceGrp');
+  const adminGroup = document.getElementById('navAdminGrp');
+  const externalParent = document.getElementById('n-external-parent');
+  const externalMenu = document.getElementById('n-external-menu');
+  const agencyQuickNav = document.getElementById('agencyQuickNav');
+
+  if (ROLE === 'Agency') {
+    if (internalParent) internalParent.style.display = 'none';
+    if (internalMenu) internalMenu.style.display = 'none';
+    if (adminGroup) adminGroup.style.display = 'none';
+    if (workspaceGroup) workspaceGroup.style.display = 'none';
+    if (agencyQuickNav) agencyQuickNav.style.display = 'block';
+    if (externalParent) externalParent.style.display = 'none';
+    if (externalMenu) externalMenu.style.display = 'none';
+  } else {
+    if (internalParent) internalParent.style.display = '';
+    if (internalMenu) internalMenu.style.display = '';
+    if (adminGroup) adminGroup.style.display = '';
+    if (workspaceGroup) {
+      workspaceGroup.style.display = '';
+      workspaceGroup.textContent = 'Workspace';
+    }
+    if (agencyQuickNav) agencyQuickNav.style.display = 'none';
+    if (externalParent) externalParent.style.display = '';
+    if (externalMenu) externalMenu.style.display = '';
   }
-  if(isStaff){
-    document.getElementById('n-access').style.display='none';
-    document.getElementById('n-logs').style.display='none';
-  }
-  if(!isAdmin){
-    // hide admin-only elements in settings after build
-  }
-  // Dashboard header action button
-  const da=document.getElementById('dash-acts');
-  if(da && !isViewer) da.innerHTML=`<button class="btn-add" onclick="nav('upload')">+ Upload Document</button>`;
-  // Dashboard new button
-  const nb=document.getElementById('dash-new-btn');
-  if(nb) nb.style.display=isViewer?'none':'';
 }
 
-const PAGE_TITLES={dashboard:'Dashboard',upload:'Upload Document',search:'Search & Retrieve',requirements:'Requirements & Compliance',ocr:'OCR Queue',archive:'Document Archive',access:'Access Control',logs:'Activity Logs',settings:'Settings'};
-const BLOCKED={Viewer:['upload','ocr','access','logs','requirements'],Staff:['access','logs']};
+function openUserHome() {
+  nav('dashboard');
+}
 
-function nav(id){
-  const blk=BLOCKED[ROLE]||[];
-  if(blk.includes(id)){toast('🚫','Access Restricted',`The ${ROLE} role does not have access to ${PAGE_TITLES[id]||id}`);return;}
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  const pg=document.getElementById('pg-'+id); if(pg) pg.classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  const ni=document.getElementById('n-'+id); if(ni) ni.classList.add('active');
-  document.getElementById('tbTitle').textContent=PAGE_TITLES[id]||id;
+function getPageElementId(route) {
+  if (route === 'dashboard' && ROLE === 'Agency') return 'pg-dashboard-agency';
+  return `pg-${route}`;
+}
+
+function getNavElementId(route) {
+  if (ROLE === 'Agency') {
+    if (route === 'dashboard') return 'n-dashboard-agency';
+    if (route === 'requirements') return 'n-requirements-agency';
+  }
+  return `n-${route}`;
+}
+
+function toggleMenu(menu) {
+  const parent = document.getElementById(`n-${menu}-parent`);
+  const submenu = document.getElementById(`n-${menu}-menu`);
+  if (!parent || !submenu) return;
+  parent.classList.toggle('open');
+  submenu.classList.toggle('open');
+}
+
+const PAGE_TITLES = {
+  dashboard: 'Dashboard',
+  upload: 'Upload Documents',
+  search: 'Document Repository',
+  requirements: 'PRIME-HRM',
+  access: 'User Management',
+  logs: 'Activity Logs',
+  settings: 'Settings',
+};
+
+function nav(id) {
+  const blocked = (window.BLOCKED && window.BLOCKED[ROLE]) || [];
+  if (blocked.includes(id)) {
+    toast('🚫', 'Access Restricted', `The ${ROLE} access group cannot open ${PAGE_TITLES[id] || id}.`);
+    return;
+  }
+  document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+  const page = document.getElementById(getPageElementId(id));
+  if (page) page.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  const navItem = document.getElementById(getNavElementId(id));
+  if (navItem) navItem.classList.add('active');
+  if (['dashboard', 'upload', 'search', 'logs', 'settings'].includes(id)) {
+    document.getElementById('n-internal-parent').classList.add('open');
+    document.getElementById('n-internal-menu').classList.add('open');
+  }
+  if (id === 'requirements') {
+    document.getElementById('n-external-parent').classList.add('open');
+    document.getElementById('n-external-menu').classList.add('open');
+  }
+  document.getElementById('tbTitle').textContent = id === 'dashboard' && ROLE === 'Agency' ? 'PRIME-HRM Dashboard' : (PAGE_TITLES[id] || id);
   closeNotif();
-  if(id==='search') setTimeout(()=>document.getElementById('searchInp').focus(),80);
-}
-function refreshCurrent(){toast('↺','Refreshed','Page data updated');}
-
-function buildAll(){
-  buildBarChart(); buildDonut(); buildDashTable(); buildDashStats();
-  buildOCR(); buildUsers(USERS); renderLogs(); buildArchive(); buildNotifs();
-  populateSearch('');
-  buildReqs();
-  injectDeadlineNotifs();
-  updateReqBadge();
-  if(ROLE==='Viewer') setTimeout(addViewerBanner,50);
+  if (id === 'search') setTimeout(() => document.getElementById('searchInp').focus(), 80);
 }
 
-// ═══════════════════════════════════════
-//  DASHBOARD
-// ═══════════════════════════════════════
-function buildDashStats(){
-  const arch=DOCS.filter(d=>d.status==='archived').length;
-  const req=REQS.filter(r=>r.status==='pending'||r.status==='overdue').length;
-  const html=[
-    {lbl:'Total Documents',val:DOCS.length.toLocaleString(),sub:'↑ 12% this month',sc:'var(--accent)',ico:'📄',click:"nav('search')"},
-    {lbl:'Pending OCR',val:OCR_Q.filter(o=>o.status!=='active').length,sub:'↑ 2 new today',sc:'var(--yellow)',ico:'🔎',click:"nav('ocr')"},
-    {lbl:'Archived',val:arch,sub:'↑ 8 this week',sc:'var(--green)',ico:'📦',click:"nav('archive')"},
-    ROLE!=='Viewer'
-      ?{lbl:ROLE==='Admin'?'Pending Requirements':'My Requirements',val:req,sub:ROLE==='Admin'?'Across all staff':'Assigned to me',sc:'var(--purple)',ico:'📋',click:"nav('requirements')"}
-      :{lbl:'Active Users',val:38,sub:'5 online now',sc:'var(--purple)',ico:'👥',click:''},
+function refreshCurrent() {
+  hydrateFromServer(true);
+}
+
+function buildAll() {
+  buildDashStats();
+  buildBarChart();
+  buildDonut();
+  buildDashTable();
+  buildAgencyDashboard();
+  applyFilters();
+  buildPrime();
+  buildUsers(USERS);
+  renderLogs();
+  buildNotifs();
+  renderInternalRoleList();
+  updateLogUserFilter();
+  document.getElementById('sysTotal').textContent = DOCS.length.toLocaleString();
+  addDashboardBanner();
+}
+
+function addDashboardBanner() {
+  const host = document.getElementById('dash-banner');
+  const message = ROLE === 'Agency'
+    ? 'Agency access is active. Use PRIME-HRM to upload ERs and monitor your submissions.'
+    : ROLE === 'Internal'
+      ? 'Internal access is active. Upload documents and control visibility by role.'
+      : 'PSED Admin access is active. You can manage both Internal and Agency workspaces.';
+  host.innerHTML = `<div class="info-banner" style="background:rgba(14,165,233,.07);border:1px solid rgba(14,165,233,.2);"><span style="font-size:18px">ℹ</span><div>${message}</div></div>`;
+}
+
+function buildDashStats() {
+  const restrictedDocs = DOCS.filter(doc => !doc.audience.includes('All Personnel')).length;
+  const myAgencySubs = PRIME_SUBMISSIONS.filter(item => item.account === UNAME).length;
+  const cards = [
+    { lbl: 'Total Documents', val: DOCS.length, sub: 'Repository records', sc: 'var(--accent)', ico: '📄', click: `nav('search')` },
+    { lbl: 'Internal Documents', val: DOCS.filter(doc => doc.status !== 'archived').length, sub: 'Active repository files', sc: 'var(--green)', ico: '🏢', click: `nav('search')` },
+    { lbl: 'PRIME-HRM Submissions', val: ROLE === 'Agency' ? myAgencySubs : PRIME_SUBMISSIONS.length, sub: ROLE === 'Agency' ? 'This agency uploads' : 'Agency ER uploads', sc: 'var(--yellow)', ico: '📎', click: `nav('requirements')` },
+    { lbl: 'Restricted Documents', val: restrictedDocs, sub: 'Role-limited access', sc: 'var(--purple)', ico: '🔒', click: `nav('search')` },
   ];
-  document.getElementById('dash-stats').innerHTML=html.map(s=>`
-    <div class="stat-card" style="--sc:${s.sc}" onclick="${s.click}">
-      <div class="sc-lbl">${s.lbl}</div><div class="sc-val" style="color:${s.sc}">${s.val}</div>
-      <div class="sc-sub">${s.sub}</div><div class="sc-ico">${s.ico}</div>
-    </div>`).join('');
+  document.getElementById('dash-stats').innerHTML = cards.map(card => `
+    <div class="stat-card" style="--sc:${card.sc}" onclick="${card.click}">
+      <div class="sc-lbl">${card.lbl}</div>
+      <div class="sc-val" style="color:${card.sc}">${Number(card.val).toLocaleString()}</div>
+      <div class="sc-sub">${card.sub}</div>
+      <div class="sc-ico">${card.ico}</div>
+    </div>
+  `).join('');
 }
 
-function addViewerBanner(){
-  const pg=document.getElementById('pg-dashboard');
-  if(!pg||document.getElementById('viewerBanner'))return;
-  const b=document.createElement('div');
-  b.id='viewerBanner';
-  b.className='info-banner';
-  b.style.cssText='background:rgba(14,165,233,.07);border:1px solid rgba(14,165,233,.2);';
-  b.innerHTML='<span style="font-size:18px">👁</span><div><strong style="color:var(--accent)">Viewer Access</strong> — You can search, view, and download documents. Upload and edit functions are restricted.</div>';
-  const head=pg.querySelector('.ph');
-  if(head) head.after(b);
-}
-
-// ═══════════════════════════════════════
-//  BAR CHART & DONUT
-// ═══════════════════════════════════════
-function buildBarChart(){
-  const months=['Sep','Oct','Nov','Dec','Jan','Feb'],vals=[112,98,145,89,167,134],arch=[18,22,31,15,28,19];
-  const mx=Math.max(...vals);
-  document.getElementById('barChart').innerHTML=months.map((m,i)=>`
+function buildBarChart() {
+  const months = ['Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'];
+  const internal = [44, 51, 47, 55, 61, 58];
+  const agency = [12, 10, 14, 9, 11, 16];
+  const max = Math.max(...internal, ...agency);
+  document.getElementById('barChart').innerHTML = months.map((month, i) => `
     <div class="bw">
       <div class="bar-inner">
-        <div class="bar" style="height:${(vals[i]/mx)*100}%;background:rgba(14,165,233,${i===5?'.9':'.45'})" onclick="toast('📊','${m} Uploads','${vals[i]} documents uploaded')"><div class="bar-tip">${vals[i]}</div></div>
-        <div class="bar" style="height:${(arch[i]/mx)*100}%;background:rgba(139,92,246,.5)" onclick="toast('📦','${m} Archived','${arch[i]} documents archived')"><div class="bar-tip">${arch[i]}</div></div>
+        <div class="bar" style="height:${(internal[i] / max) * 100}%;background:rgba(14,165,233,${i === 5 ? '.9' : '.45'})" onclick="toast('📊','${month} Internal Uploads','${internal[i]} document(s) uploaded')"><div class="bar-tip">${internal[i]}</div></div>
+        <div class="bar" style="height:${(agency[i] / max) * 100}%;background:rgba(16,185,129,.55)" onclick="toast('📊','${month} Agency Uploads','${agency[i]} ER submission(s) received')"><div class="bar-tip">${agency[i]}</div></div>
       </div>
-      <div class="bar-lbl">${m}</div>
-    </div>`).join('');
+      <div class="bar-lbl">${month}</div>
+    </div>
+  `).join('');
 }
 
-function buildDonut(){
-  const cats=[{l:'Budget & Finance',v:35,c:'#0ea5e9'},{l:'Resolutions',v:22,c:'#8b5cf6'},{l:'Ordinances',v:18,c:'#10b981'},{l:'Administrative',v:14,c:'#f59e0b'},{l:'Others',v:11,c:'#64748b'}];
-  const tot=cats.reduce((a,b)=>a+b.v,0);let off=0,paths='';
-  cats.forEach(c=>{const p=c.v/tot,big=p>.5?1:0,a=p*2*Math.PI,x1=18+13*Math.sin(off*2*Math.PI),y1=18-13*Math.cos(off*2*Math.PI);off+=p;const x2=18+13*Math.sin(off*2*Math.PI),y2=18-13*Math.cos(off*2*Math.PI);
-    paths+=`<path d="M18 18 L${x1} ${y1} A13 13 0 ${big} 1 ${x2} ${y2} Z" fill="${c.c}" opacity=".85" style="cursor:pointer;transition:opacity .2s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.85" onclick="filterCat('${c.l}')"/>`;
+function buildDonut() {
+  const counts = {};
+  DOCS.forEach(doc => { counts[doc.docType] = (counts[doc.docType] || 0) + 1; });
+  const colors = ['#0ea5e9', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#64748b'];
+  const items = Object.entries(counts).map(([label, value], index) => ({ label, value, color: colors[index % colors.length] }));
+  const total = items.reduce((sum, item) => sum + item.value, 0) || 1;
+  let offset = 0;
+  let paths = '';
+  items.forEach(item => {
+    const portion = item.value / total;
+    const large = portion > 0.5 ? 1 : 0;
+    const x1 = 18 + 13 * Math.sin(offset * 2 * Math.PI);
+    const y1 = 18 - 13 * Math.cos(offset * 2 * Math.PI);
+    offset += portion;
+    const x2 = 18 + 13 * Math.sin(offset * 2 * Math.PI);
+    const y2 = 18 - 13 * Math.cos(offset * 2 * Math.PI);
+    paths += `<path d="M18 18 L${x1} ${y1} A13 13 0 ${large} 1 ${x2} ${y2} Z" fill="${item.color}" opacity=".88" style="cursor:pointer" onclick="filterDocType('${item.label}')"/>`;
   });
-  document.getElementById('donutSvg').innerHTML=paths+'<circle cx="18" cy="18" r="7" fill="var(--panel)"/>';
-  document.getElementById('donutLeg').innerHTML=cats.map(c=>`<div class="leg-item" onclick="filterCat('${c.l}')"><div class="leg-dot" style="background:${c.c}"></div><span>${c.l}</span><span class="leg-pct">${c.v}%</span></div>`).join('');
-}
-function filterCat(cat){nav('search');document.getElementById('fCat').value=cat;applyFilters();}
-
-// ═══════════════════════════════════════
-//  DASHBOARD TABLE
-// ═══════════════════════════════════════
-function buildDashTable(){
-  const t=document.getElementById('dashTbl');t.innerHTML='';
-  DOCS.slice(0,6).forEach(d=>{
-    const isV=ROLE==='Viewer',isA=ROLE==='Admin';
-    t.innerHTML+=`<tr>
-      <td class="mono-sm">${d.id}</td>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.title}">${d.title}</td>
-      <td>${d.src}</td><td><span class="badge" style="background:var(--navy3);color:var(--text2)">${d.cat}</span></td>
-      <td class="mono-sm" style="color:var(--text2)">${d.date}</td>
-      <td><span class="badge b-${d.status}">${d.status}</span></td>
-      <td><div class="btn-row">
-        <button class="btn btn-blue" onclick="openDoc('${d.id}')">👁 View</button>
-        <button class="btn" onclick="dlDoc('${d.id}')">⬇</button>
-        ${!isV?`<button class="btn" onclick="openEditMeta('${d.id}')">✏</button>`:''}
-        ${isA?`<button class="btn btn-red" onclick="delDoc('${d.id}')">🗑</button>`:''}
-      </div></td></tr>`;
-  });
+  document.getElementById('donutSvg').innerHTML = `${paths}<circle cx="18" cy="18" r="7" fill="var(--panel)"/>`;
+  document.getElementById('donutLeg').innerHTML = items.map(item => `<div class="leg-item" onclick="filterDocType('${item.label}')"><div class="leg-dot" style="background:${item.color}"></div><span>${item.label}</span><span class="leg-pct">${Math.round((item.value / total) * 100)}%</span></div>`).join('');
 }
 
-// ═══════════════════════════════════════
-//  DOCUMENT VIEWER
-// ═══════════════════════════════════════
-function openDoc(id){
-  const d=DOCS.find(x=>x.id===id);if(!d)return;
-  curDocId=id;
-  document.getElementById('dmTitle').textContent=d.title;
-  document.getElementById('dmId').textContent=d.id;
-  document.getElementById('dmMeta').innerHTML=`
-    <div class="meta-item"><div class="meta-k">Document ID</div><div class="meta-v" style="font-family:var(--mono)">${d.id}</div></div>
-    <div class="meta-item"><div class="meta-k">Source</div><div class="meta-v">${d.src}</div></div>
-    <div class="meta-item"><div class="meta-k">Category</div><div class="meta-v">${d.cat}</div></div>
-    <div class="meta-item"><div class="meta-k">Date Received</div><div class="meta-v" style="font-family:var(--mono)">${d.date}</div></div>
-    <div class="meta-item"><div class="meta-k">Status</div><div class="meta-v"><span class="badge b-${d.status}">${d.status}</span></div></div>
-    <div class="meta-item"><div class="meta-k">File</div><div class="meta-v" style="font-family:var(--mono)">${d.size} • ${d.pages} pages</div></div>`;
-  document.getElementById('dmOcr').textContent=d.ocr||'No OCR text available.';
-  const isV=ROLE==='Viewer',isA=ROLE==='Admin';
-  document.getElementById('dmViewerNote').innerHTML=isV?`<div class="info-banner" style="background:rgba(14,165,233,.07);border:1px solid rgba(14,165,233,.18);font-size:11px"><span>👁</span><span>Viewer mode — you can download this document. Contact Admin to request edits.</span></div>`:'';
-  let btns=`<button class="btn btn-blue" onclick="dlDoc('${d.id}')">⬇ Download</button><button class="btn" onclick="printDoc()">🖨 Print</button><button class="btn" onclick="closeModal('docModal')">✕ Close</button>`;
-  if(!isV) btns+=`<button class="btn btn-blue" onclick="closeModal('docModal');openEditMeta('${d.id}')">✏ Edit</button>`;
-  if(isA){
-    btns+=d.status!=='archived'?`<button class="btn btn-yellow" onclick="archDoc('${d.id}')">📦 Archive</button>`:`<button class="btn btn-green" onclick="restoreDoc('${d.id}')">♻ Restore</button>`;
-    btns+=`<button class="btn btn-red" onclick="delDoc('${d.id}')">🗑 Delete</button>`;
-  }
-  document.getElementById('dmActs').innerHTML=btns;
-  addLog(`Viewed ${id}: ${d.title.slice(0,30)}`,UNAME,'View','👁','rgba(100,116,139,.14)');
+function filterDocType(type) {
+  nav('search');
+  document.getElementById('fType').value = type;
+  applyFilters();
+}
+
+function buildDashTable() {
+  document.getElementById('dashTbl').innerHTML = DOCS.slice(0, 6).map(doc => `
+    <tr>
+      <td class="mono-sm">${doc.id}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${doc.title}">${doc.title}</td>
+      <td>${doc.src}</td>
+      <td><span class="badge" style="background:var(--navy3);color:var(--text2)">${doc.docType}</span></td>
+      <td class="mono-sm" style="color:var(--text2)">${doc.date}</td>
+      <td><span class="badge b-${doc.status}">${doc.status}</span></td>
+      <td><div class="btn-row"><button class="btn btn-blue" onclick="openDoc('${doc.id}')">👁 View</button><button class="btn" onclick="dlDoc('${doc.id}')">⬇</button>${ROLE !== 'Agency' ? `<button class="btn" onclick="openEditMeta('${doc.id}')">✏</button>` : ''}${ROLE === 'PSED Admin' ? `<button class="btn btn-red" onclick="delDoc('${doc.id}')">🗑</button>` : ''}</div></td>
+    </tr>
+  `).join('');
+}
+
+function openDoc(id) {
+  const doc = DOCS.find(item => item.id === id);
+  if (!doc) return;
+  curDocId = id;
+  document.getElementById('dmTitle').textContent = doc.title;
+  document.getElementById('dmId').textContent = doc.id;
+  document.getElementById('dmMeta').innerHTML = `
+    <div class="meta-item"><div class="meta-k">Document ID</div><div class="meta-v" style="font-family:var(--mono)">${doc.id}</div></div>
+    <div class="meta-item"><div class="meta-k">Source</div><div class="meta-v">${doc.src}</div></div>
+    <div class="meta-item"><div class="meta-k">Document Type</div><div class="meta-v">${doc.docType}</div></div>
+    <div class="meta-item"><div class="meta-k">Date Filed</div><div class="meta-v" style="font-family:var(--mono)">${doc.date}</div></div>
+    <div class="meta-item"><div class="meta-k">Status</div><div class="meta-v"><span class="badge b-${doc.status}">${doc.status}</span></div></div>
+    <div class="meta-item"><div class="meta-k">Visible To</div><div class="meta-v">${doc.audience.join(', ')}</div></div>
+  `;
+  document.getElementById('dmOcr').textContent = buildDocNotes(doc);
+  document.getElementById('dmViewerNote').innerHTML = '';
+  document.getElementById('dmActs').innerHTML = `<button class="btn btn-blue" onclick="dlDoc('${doc.id}')">⬇ Download</button><button class="btn" onclick="printDoc()">🖨 Print</button>${ROLE !== 'Agency' ? `<button class="btn btn-blue" onclick="closeModal('docModal');openEditMeta('${doc.id}')">✏ Edit</button>` : ''}<button class="btn" onclick="closeModal('docModal')">✕ Close</button>`;
+  addLog(`Viewed ${id}`, UNAME, 'View', '👁', 'rgba(100,116,139,.14)');
   openModal('docModal');
 }
-function dlDoc(id){const d=DOCS.find(x=>x.id===id);addLog(`Downloaded ${id}`,UNAME,'Download','📥','rgba(16,185,129,.14)');toast('📥','Download Started',d.title.slice(0,40));closeModal('docModal');}
-function printDoc(){toast('🖨','Print Initiated','Document sent to printer');}
-function archDoc(id){
-  if(ROLE==='Viewer'){toast('🚫','Denied','Viewers cannot archive documents');return;}
-  const d=DOCS.find(x=>x.id===id);
-  showConfirm('Archive Document','📦',`Archive "${d.title.slice(0,40)}"? It will move to archive storage.`,()=>{
-    d.status='archived';addLog(`Archived ${id}`,UNAME,'Archive','📦','rgba(245,158,11,.14)');
-    buildDashTable();buildArchive();applyFilters();buildDashStats();
-    toast('📦','Archived',id+' moved to archive');closeModal('docModal');
+
+function buildDocNotes(doc) {
+  const lines = [
+    `Visible To: ${doc.audience.join(', ')}`,
+    `Retention: ${doc.retention}`,
+    '',
+    doc.notes || 'No additional description.',
+  ];
+  Object.entries(doc.details || {}).forEach(([key, value]) => {
+    lines.push(`${key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())}: ${value}`);
   });
+  return lines.join('\n');
 }
-function restoreDoc(id){
-  if(ROLE!=='Admin'){toast('🚫','Denied','Only Admins can restore documents');return;}
-  const d=DOCS.find(x=>x.id===id);d.status='active';
-  addLog(`Restored ${id}`,UNAME,'Archive','♻️','rgba(16,185,129,.1)');
-  buildDashTable();buildArchive();applyFilters();buildDashStats();
-  toast('♻️','Restored',id+' is now active');closeModal('docModal');
+
+function dlDoc(id) {
+  const doc = DOCS.find(item => item.id === id);
+  if (!doc) return;
+  addLog(`Downloaded ${id}`, UNAME, 'Download', '📥', 'rgba(16,185,129,.14)');
+  toast('📥', 'Download Started', doc.title);
 }
-function delDoc(id){
-  if(ROLE!=='Admin'){toast('🚫','Denied','Only Admins can delete documents');return;}
-  const d=DOCS.find(x=>x.id===id)||{id,title:id};
-  showConfirm('Delete Document','🗑',`Permanently delete "${d.title.slice(0,40)}"? This cannot be undone.`,()=>{
-    DOCS.splice(DOCS.findIndex(x=>x.id===id),1);
-    addLog(`Deleted ${id}`,UNAME,'Delete','🗑','rgba(239,68,68,.14)');
-    buildDashTable();buildArchive();applyFilters();buildDashStats();
-    toast('🗑','Deleted',id+' permanently removed');closeModal('docModal');closeModal('confirmModal');
+
+function printDoc() {
+  toast('🖨', 'Print Initiated', 'Document sent to printer');
+}
+
+function delDoc(id) {
+  if (ROLE !== 'PSED Admin') {
+    toast('🚫', 'Denied', 'Only PSED Admin can delete documents.');
+    return;
+  }
+  const doc = DOCS.find(item => item.id === id);
+  if (!doc) return;
+  showConfirm('Delete Document', '🗑', `Delete "${doc.title}"? This cannot be undone.`, () => {
+    const form = new FormData();
+    form.append('action', 'delete');
+    form.append('id', doc.dbId);
+    apiJson('process/documentProcess.php', { method: 'POST', body: form })
+      .then(() => hydrateFromServer())
+      .then(() => {
+        toast('🗑', 'Deleted', `${id} removed from the repository.`);
+        closeModal('docModal');
+      })
+      .catch(error => toast('⚠', 'Delete Failed', error.message));
   });
 }
 
-// ═══════════════════════════════════════
-//  EDIT METADATA
-// ═══════════════════════════════════════
-function openEditMeta(id){
-  if(ROLE==='Viewer'){toast('🚫','Denied','Viewers cannot edit metadata');return;}
-  const d=DOCS.find(x=>x.id===id);if(!d)return;
-  curDocId=id;
-  document.getElementById('emT').value=d.title;
-  document.getElementById('emSrc').value=d.src;
-  document.getElementById('emCat').value=d.cat;
-  document.getElementById('emDate').value=d.date;
-  document.getElementById('emDesc').value=d.ocr||'';
+function renderRoleCheckboxes(containerId, selected = ['All Personnel']) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const items = ['All Personnel', ...INTERNAL_ROLES];
+  container.innerHTML = items.map(role => `<label class="role-check"><input type="checkbox" value="${role}" ${selected.includes(role) ? 'checked' : ''}><span>${role}</span></label>`).join('');
+}
+
+function getSelectedRoles(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return ['All Personnel'];
+  const checked = [...container.querySelectorAll('input:checked')].map(input => input.value);
+  return checked.length ? checked : ['All Personnel'];
+}
+
+function renderDocTypeFields() {
+  const type = document.getElementById('mType').value;
+  const host = document.getElementById('docTypeFields');
+  if (!host) return;
+  if (type === 'Memorandum') {
+    host.innerHTML = `<div class="form-2"><div class="fld"><label>Memo Number</label><input id="mMemoNumber"></div><div class="fld"><label>Addressee</label><input id="mAddressee"></div></div><div class="form-2"><div class="fld"><label>Subject</label><input id="mSubject"></div><div class="fld"><label>Date of Memo</label><input id="mMemoDate" type="date"></div></div><div class="fld"><label>Memo Author</label><input id="mMemoAuthor"></div>`;
+    return;
+  }
+  if (type === 'Opinion/Query') {
+    host.innerHTML = `<div class="form-2"><div class="fld"><label>Addressee</label><input id="mAddressee"></div><div class="fld"><label>Subject</label><input id="mSubject"></div></div><div class="fld"><label>Date of Opinion</label><input id="mOpinionDate" type="date"></div>`;
+    return;
+  }
+  host.innerHTML = `<div class="info-banner" style="background:rgba(100,116,139,.08);border:1px solid rgba(100,116,139,.18);margin:0 0 10px 0"><span style="font-size:18px">📄</span><div>No additional fields are required for this document type.</div></div>`;
+}
+
+function handleDrop(event) {
+  event.preventDefault();
+  document.getElementById('dropzone').classList.remove('drag');
+  if (event.dataTransfer.files[0]) handleFile(event.dataTransfer.files[0]);
+}
+
+function handleFile(file) {
+  if (!file.name.toLowerCase().endsWith('.pdf')) return toast('❌', 'Invalid', 'PDF files only.');
+  if (file.size > 50 * 1024 * 1024) return toast('❌', 'Too Large', 'Max 50MB.');
+  selFile = file;
+  document.getElementById('fileCard').classList.add('show');
+  document.getElementById('fName').textContent = file.name;
+  document.getElementById('fSize').textContent = `${(file.size / 1024).toFixed(1)} KB`;
+  toast('📄', 'File Ready', file.name);
+}
+
+function clearFile() {
+  selFile = null;
+  document.getElementById('fileCard').classList.remove('show');
+  document.getElementById('fileInp').value = '';
+  document.getElementById('progWrap').style.display = 'none';
+  document.getElementById('publishNotice').style.display = 'none';
+}
+
+function resetUpload() {
+  clearFile();
+  ['mTitle', 'mDesc'].forEach(id => document.getElementById(id).value = '');
+  ['mSource', 'mType'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('mRet').value = '5 Years';
+  renderRoleCheckboxes('mRolesBox');
+  renderDocTypeFields();
+  toast('↺', 'Reset', 'Upload form cleared.');
+}
+
+function collectDocTypeDetails() {
+  const type = document.getElementById('mType').value;
+  if (type === 'Memorandum') {
+    return {
+      memoNumber: document.getElementById('mMemoNumber')?.value.trim() || '',
+      addressee: document.getElementById('mAddressee')?.value.trim() || '',
+      subject: document.getElementById('mSubject')?.value.trim() || '',
+      memoDate: document.getElementById('mMemoDate')?.value || '',
+      memoAuthor: document.getElementById('mMemoAuthor')?.value.trim() || '',
+    };
+  }
+  if (type === 'Opinion/Query') {
+    return {
+      addressee: document.getElementById('mAddressee')?.value.trim() || '',
+      subject: document.getElementById('mSubject')?.value.trim() || '',
+      opinionDate: document.getElementById('mOpinionDate')?.value || '',
+    };
+  }
+  return {};
+}
+
+async function submitUpload() {
+  if (ROLE === 'Agency') return toast('🚫', 'Denied', 'Agency users cannot upload to the internal repository.');
+  const title = document.getElementById('mTitle').value.trim();
+  const source = document.getElementById('mSource').value;
+  const docType = document.getElementById('mType').value;
+  if (!title || !source || !docType || !selFile) return toast('⚠', 'Required', 'Complete the required fields and attach a PDF.');
+
+  const progressWrap = document.getElementById('progWrap');
+  progressWrap.style.display = 'block';
+  document.getElementById('progFill').style.width = '25%';
+  document.getElementById('progPct').textContent = '25%';
+  document.getElementById('progLbl').textContent = 'Uploading to Repository…';
+  document.getElementById('progTxt').textContent = 'Saving document and metadata…';
+
+  const formData = new FormData();
+  formData.append('action', 'upload');
+  formData.append('title', title);
+  formData.append('source_office', source);
+  formData.append('document_type', docType);
+  formData.append('description', document.getElementById('mDesc').value.trim());
+  formData.append('retention_period', document.getElementById('mRet').value);
+  getSelectedRoles('mRolesBox').forEach(role => formData.append('visibility_roles[]', role));
+  formData.append('extra_metadata', JSON.stringify(collectDocTypeDetails()));
+  formData.append('file', selFile);
+
+  try {
+    const result = await apiJson('process/documentProcess.php', { method: 'POST', body: formData });
+    document.getElementById('progFill').style.width = '100%';
+    document.getElementById('progPct').textContent = '100%';
+    document.getElementById('progTxt').textContent = 'Done!';
+    document.getElementById('publishNotice').style.display = 'block';
+    NOTIFS.unshift({ txt: `New repository upload: ${title}`, time: 'Just now', col: 'var(--accent)' });
+    await hydrateFromServer();
+    toast('✅', 'Upload Successful', `${result.document.id} added to the repository.`);
+    setTimeout(resetUpload, 900);
+  } catch (error) {
+    document.getElementById('progWrap').style.display = 'none';
+    toast('⚠', 'Upload Failed', error.message);
+  }
+}
+
+function openEditMeta(id) {
+  if (ROLE === 'Agency') return toast('🚫', 'Denied', 'Agency users cannot edit repository metadata.');
+  const doc = DOCS.find(item => item.id === id);
+  if (!doc) return;
+  curDocId = id;
+  document.getElementById('emT').value = doc.title;
+  document.getElementById('emSrc').value = doc.src;
+  document.getElementById('emType').value = doc.docType;
+  document.getElementById('emRet').value = doc.retention;
+  document.getElementById('emAudience').value = doc.audience.join(', ');
+  document.getElementById('emDesc').value = doc.notes || '';
   openModal('editMetaModal');
 }
-function saveMeta(){
-  if(ROLE==='Viewer'){toast('🚫','Denied');return;}
-  const d=DOCS.find(x=>x.id===curDocId);if(!d)return;
-  d.title=document.getElementById('emT').value||d.title;
-  d.src=document.getElementById('emSrc').value||d.src;
-  d.cat=document.getElementById('emCat').value||d.cat;
-  d.date=document.getElementById('emDate').value||d.date;
-  d.ocr=document.getElementById('emDesc').value;
-  addLog(`Edited metadata for ${curDocId}`,UNAME,'Upload','✏️','rgba(139,92,246,.1)');
-  buildDashTable();applyFilters();buildArchive();
-  toast('✅','Metadata Saved',curDocId+' updated');closeModal('editMetaModal');
-}
 
-// ═══════════════════════════════════════
-//  UPLOAD
-// ═══════════════════════════════════════
-function handleDrop(e){e.preventDefault();document.getElementById('dropzone').classList.remove('drag');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);}
-function handleFile(f){
-  if(!f.name.toLowerCase().endsWith('.pdf')){toast('❌','Invalid','PDF files only');return;}
-  if(f.size>50*1024*1024){toast('❌','Too Large','Max 50MB');return;}
-  selFile=f;
-  const fc=document.getElementById('fileCard');fc.classList.add('show');
-  document.getElementById('fName').textContent=f.name;
-  document.getElementById('fSize').textContent=(f.size/1024).toFixed(1)+' KB';
-  toast('📄','File Ready',f.name);
-}
-function clearFile(){
-  selFile=null;document.getElementById('fileCard').classList.remove('show');
-  document.getElementById('fileInp').value='';
-  document.getElementById('progWrap').style.display='none';
-  document.getElementById('ocrRunning').style.display='none';
-}
-function resetUpload(){clearFile();['mTitle','mDesc'].forEach(i=>document.getElementById(i).value='');['mSource','mCat'].forEach(i=>document.getElementById(i).value='');document.getElementById('mDate').value='';toast('↺','Reset','Upload form cleared');}
-function submitUpload(){
-  if(ROLE==='Viewer'){toast('🚫','Denied','Viewers cannot upload');return;}
-  const t=document.getElementById('mTitle').value.trim(),src=document.getElementById('mSource').value,dt=document.getElementById('mDate').value,cat=document.getElementById('mCat').value;
-  if(!t||!src||!dt||!cat){toast('⚠️','Required','Fill all required fields (*)');return;}
-  const pw=document.getElementById('progWrap');pw.style.display='block';
-  let p=0;
-  const steps=['Validating PDF…','Assigning Document ID…','Uploading to server…','Initiating OCR…','Extracting text…','Indexing content…','Saving…','Done!'];
-  const iv=setInterval(()=>{
-    p+=Math.random()*14;if(p>100)p=100;
-    document.getElementById('progFill').style.width=p+'%';
-    document.getElementById('progPct').textContent=Math.floor(p)+'%';
-    document.getElementById('progLbl').textContent='Uploading & Processing…';
-    document.getElementById('progTxt').textContent=steps[Math.min(Math.floor(p/13),steps.length-1)];
-    if(p>=100){
-      clearInterval(iv);
-      document.getElementById('ocrRunning').style.display='block';
-      const nid='DOC-2025-'+String(Math.floor(Math.random()*9000)+1000);
-      DOCS.unshift({id:nid,title:t,src,cat,date:dt,status:'processing',size:selFile?(selFile.size/1024).toFixed(1)+' KB':'1.2 MB',pages:Math.floor(Math.random()*20+1),ocr:'OCR processing in queue…'});
-      OCR_Q.unshift({id:nid,title:t,src,date:dt,status:'pending',prog:0,acc:'—'});
-      addLog(`Uploaded ${nid}: ${t.slice(0,30)}`,UNAME,'Upload','📤','rgba(14,165,233,.14)');
-      buildDashTable();buildOCR();applyFilters();buildDashStats();
-      NOTIFS.unshift({txt:`Upload complete: ${nid}`,time:'Just now',col:'var(--green)'});buildNotifs();
-      toast('✅','Upload Successful',nid+' — OCR processing started');
-      setTimeout(()=>{pw.style.display='none';document.getElementById('progFill').style.width='0%';document.getElementById('ocrRunning').style.display='none';},3000);
-    }
-  },200);
-}
-
-// ═══════════════════════════════════════
-//  SEARCH
-// ═══════════════════════════════════════
-function doSearch(q){document.getElementById('searchInp').value=q;applyFilters();}
-function applyFilters(){
-  const q=document.getElementById('searchInp').value.toLowerCase(),src=document.getElementById('fSrc').value,cat=document.getElementById('fCat').value,yr=document.getElementById('fYr').value,st=document.getElementById('fSt').value;
-  srchRes=DOCS.filter(d=>{
-    const mQ=!q||(d.title+d.src+d.cat+d.id+(d.ocr||'')).toLowerCase().includes(q);
-    return mQ&&(!src||d.src===src)&&(!cat||d.cat===cat)&&(!yr||d.date.startsWith(yr))&&(!st||d.status===st);
-  });
-  srchPage=1;renderSearch();
-}
-function renderSearch(){
-  const q=document.getElementById('searchInp').value.toLowerCase();
-  const hl=t=>q?t.replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<span class="hl">${m}</span>`):t;
-  const paged=srchRes.slice((srchPage-1)*PP,srchPage*PP);
-  const isV=ROLE==='Viewer',isA=ROLE==='Admin';
-  document.getElementById('srchCount').textContent=srchRes.length+' document(s) found';
-  document.getElementById('srchResults').innerHTML=paged.length?paged.map(d=>`
-    <div class="res-card" onclick="openDoc('${d.id}')">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px">
-        <div class="res-title">${hl(d.title)}</div><span class="badge b-${d.status}">${d.status}</span>
-      </div>
-      <div class="res-meta"><span>📍 ${hl(d.src)}</span><span>📂 ${hl(d.cat)}</span><span>📅 ${d.date}</span><span>${d.id}</span></div>
-      ${q&&d.ocr?`<div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.6">${hl(d.ocr.slice(0,120)+'…')}</div>`:''}
-      <div class="btn-row" style="margin-top:10px" onclick="event.stopPropagation()">
-        <button class="btn btn-blue" onclick="openDoc('${d.id}')">👁 View</button>
-        <button class="btn" onclick="dlDoc('${d.id}')">⬇ Download</button>
-        ${!isV?`<button class="btn" onclick="openEditMeta('${d.id}')">✏ Edit</button>`:''}
-        ${isA&&d.status!=='archived'?`<button class="btn btn-yellow" onclick="archDoc('${d.id}')">📦 Archive</button>`:''}
-      </div>
-    </div>`).join(''):`<div class="empty-state"><div class="empty-ico">🔍</div><div>No documents match your search</div></div>`;
-  buildPager('srchPager',srchRes.length,PP,srchPage,p=>{srchPage=p;renderSearch();});
-}
-function clearFilters(){['fSrc','fCat','fYr','fSt'].forEach(i=>document.getElementById(i).value='');document.getElementById('searchInp').value='';applyFilters();}
-function populateSearch(q){document.getElementById('searchInp').value=q;applyFilters();}
-function exportCSV(){toast('📥','Exported','Documents exported as CSV');}
-
-// ═══════════════════════════════════════
-//  REQUIREMENTS
-// ═══════════════════════════════════════
-function daysUntil(ds){const n=new Date();n.setHours(0,0,0,0);const d=new Date(ds);d.setHours(0,0,0,0);return Math.round((d-n)/86400000);}
-function dlChip(ds,st){
-  if(st==='approved')return`<span class="dl-chip dl-ok">✅ Approved</span>`;
-  const d=daysUntil(ds);
-  if(d<0)return`<span class="dl-chip dl-over">🚨 Overdue ${Math.abs(d)}d</span>`;
-  if(d===0)return`<span class="dl-chip dl-hot">🔴 Due TODAY</span>`;
-  if(d<=3)return`<span class="dl-chip dl-hot">🔴 ${d}d left</span>`;
-  if(d<=7)return`<span class="dl-chip dl-warn">⚠️ ${d}d left</span>`;
-  return`<span class="dl-chip dl-ok">📅 ${d}d left</span>`;
-}
-function stBadge(st){const m={pending:{bg:'rgba(14,165,233,.12)',c:'var(--accent)',l:'⏳ Pending'},submitted:{bg:'rgba(139,92,246,.12)',c:'var(--purple)',l:'📤 Submitted'},approved:{bg:'rgba(16,185,129,.12)',c:'var(--green)',l:'✅ Approved'},rejected:{bg:'rgba(239,68,68,.12)',c:'var(--red)',l:'❌ Rejected'},overdue:{bg:'rgba(239,68,68,.2)',c:'var(--red)',l:'🚨 Overdue'}};const s=m[st]||m.pending;return`<span style="background:${s.bg};color:${s.c};padding:3px 9px;border-radius:20px;font-size:10px;font-family:var(--mono)">${s.l}</span>`;}
-
-function getMyReqs(){
-  if(ROLE==='Admin') return REQS;
-  return REQS.filter(r=>r.assignedTo===UNAME);
-}
-
-function buildReqs(){
-  // Setup header
-  const isAdmin=ROLE==='Admin';
-  document.getElementById('req-sub').textContent=isAdmin?'Manage all agency requirements and compliance deadlines':'Your assigned requirements and compliance checklist from PSED Admin';
-  document.getElementById('req-acts').innerHTML=isAdmin
-    ?`<button class="btn" onclick="toast('📥','Exported','Compliance report exported')">📥 Export Report</button><button class="btn-add" onclick="openAddReq()">+ Add Requirement</button>`
-    :`<button class="btn" onclick="toast('📥','Exported','Your compliance report exported')">📥 My Compliance Report</button>`;
-  // Populate assigned-to dropdown
-  const sel=document.getElementById('rqAsgn');
-  if(sel){sel.innerHTML='<option value="">Select Staff / Agency…</option>';
-    USERS.filter(u=>u.role==='Staff').forEach(u=>sel.innerHTML+=`<option value="${u.user}">${u.name} — ${u.dept}</option>`);}
-  renderReqStats();renderReqs();updateReqBadge();
-}
-
-function renderReqStats(){
-  const list=getMyReqs();
-  REQS.forEach(r=>{if(r.status==='pending'&&daysUntil(r.deadline)<0)r.status='overdue';});
-  const tot=list.length,comp=list.filter(r=>r.status==='approved').length,pend=list.filter(r=>r.status==='pending'||r.status==='submitted').length,over=list.filter(r=>r.status==='overdue').length;
-  document.getElementById('req-stats').innerHTML=`
-    <div class="stat-card" style="--sc:var(--accent);cursor:default"><div class="sc-lbl">${ROLE==='Admin'?'Total Requirements':'Assigned To Me'}</div><div class="sc-val">${tot}</div><div class="sc-sub">Active checklists</div><div class="sc-ico">📋</div></div>
-    <div class="stat-card" style="--sc:var(--green);cursor:default"><div class="sc-lbl">Approved</div><div class="sc-val" style="color:var(--green)">${comp}</div><div class="sc-sub">Completed on time</div><div class="sc-ico">✅</div></div>
-    <div class="stat-card" style="--sc:var(--yellow);cursor:default"><div class="sc-lbl">Pending / Submitted</div><div class="sc-val" style="color:var(--yellow)">${pend}</div><div class="sc-sub">Awaiting action</div><div class="sc-ico">⏳</div></div>
-    <div class="stat-card" style="--sc:var(--red);cursor:default"><div class="sc-lbl">Overdue</div><div class="sc-val" style="color:var(--red)">${over}</div><div class="sc-sub">Past deadline</div><div class="sc-ico">🚨</div></div>`;
-}
-
-function renderReqs(){
-  const q=(document.getElementById('reqQ')||{value:''}).value.toLowerCase();
-  const fst=(document.getElementById('reqFst')||{value:''}).value;
-  const fcat=(document.getElementById('reqFcat')||{value:''}).value;
-  const fpri=(document.getElementById('reqFpri')||{value:''}).value;
-  REQS.forEach(r=>{if(r.status==='pending'&&daysUntil(r.deadline)<0)r.status='overdue';});
-  let list=getMyReqs();
-  if(q)list=list.filter(r=>(r.title+r.cat+r.desc).toLowerCase().includes(q));
-  if(fst)list=list.filter(r=>r.status===fst);
-  if(fcat)list=list.filter(r=>r.cat===fcat);
-  if(fpri)list=list.filter(r=>r.pri===fpri);
-  list.sort((a,b)=>(a.status==='overdue'?-1:0)-(b.status==='overdue'?-1:0)||new Date(a.deadline)-new Date(b.deadline));
-  const isAdmin=ROLE==='Admin';
-  const el=document.getElementById('reqList');
-  if(!list.length){el.innerHTML=`<div class="empty-state"><div class="empty-ico">📋</div><div>${isAdmin?'No requirements. Click "+ Add Requirement" to create one.':'No requirements assigned to you yet.'}</div></div>`;return;}
-  el.innerHTML=list.map(r=>{
-    const done=r.subs.filter(s=>s.status==='approved').length,tot=r.docTypes.length;
-    const pct=tot?Math.round((done/tot)*100):0;
-    const pc=pct===100?'var(--green)':r.status==='overdue'?'var(--red)':'var(--accent)';
-    return`<div class="req-card p-${r.pri}">
-      <div class="req-hd">
-        <div class="req-title">${r.title}</div>
-        <div class="req-badge-row">
-          <span class="pri-chip pc-${r.pri}">${r.pri}</span>
-          ${stBadge(r.status)}
-          ${dlChip(r.deadline,r.status)}
-        </div>
-      </div>
-      <div class="req-meta-row">
-        <span>📂 ${r.cat}</span><span>📅 Deadline: ${r.deadline}</span>
-        <span>👤 ${isAdmin?r.assignedName:'Assigned to me'}</span>
-        <span>📋 ${r.docTypes.length} doc(s) required</span>
-        ${r.subs.length?`<span>📤 ${r.subs.length} submission(s)</span>`:''}
-      </div>
-      <div class="req-prog-wrap">
-        <div class="req-prog-lbl"><span>Compliance Progress</span><span style="color:${pc}">${pct}% (${done}/${tot} approved)</span></div>
-        <div class="req-prog-bar"><div class="req-prog-fill" style="width:${pct}%;background:${pc}"></div></div>
-      </div>
-      <div class="req-desc">${r.desc.slice(0,130)}…</div>
-      <div class="req-acts">
-        ${isAdmin
-          ?`<button class="btn btn-blue" onclick="openAdminReq('${r.id}')">📊 View Submissions</button>
-             <button class="btn" onclick="editReq('${r.id}')">✏ Edit</button>
-             <button class="btn" onclick="sendReminder('${r.id}')">🔔 Send Reminder</button>
-             <button class="btn btn-red" onclick="deleteReq('${r.id}')">🗑 Delete</button>`
-          :`<button class="btn btn-blue" onclick="openReqView('${r.id}')">📋 View Details</button>
-             ${r.status!=='approved'?`<button class="btn btn-green" onclick="openReqView('${r.id}')">📤 Submit Document</button>`:`<button class="btn" style="opacity:.5;cursor:default">✅ Completed</button>`}`
-        }
-      </div>
-    </div>`;
-  }).join('');
-}
-function clearReqFilters(){['reqQ','reqFst','reqFcat','reqFpri'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});renderReqs();}
-function updateReqBadge(){
-  const urgent=getMyReqs().filter(r=>r.status!=='approved'&&daysUntil(r.deadline)<=7).length;
-  const b=document.getElementById('nb-req');if(b){b.textContent=urgent;b.style.display=urgent>0?'':'none';}
-}
-
-// Admin: Add/Edit
-function openAddReq(){
-  editReqId=null;
-  document.getElementById('addReqTitle').textContent='Add New Requirement';
-  ['rqT','rqDocs'].forEach(i=>document.getElementById(i).value='');
-  ['rqCat','rqPri','rqAsgn'].forEach(i=>document.getElementById(i).value='');
-  document.getElementById('rqDesc').value='';document.getElementById('rqDl').value='';
-  openModal('addReqModal');
-}
-function editReq(id){
-  const r=REQS.find(x=>x.id===id);if(!r)return;
-  editReqId=id;document.getElementById('addReqTitle').textContent='Edit Requirement';
-  document.getElementById('rqT').value=r.title;document.getElementById('rqCat').value=r.cat;
-  document.getElementById('rqPri').value=r.pri;document.getElementById('rqDl').value=r.deadline;
-  document.getElementById('rqAsgn').value=r.assignedTo;document.getElementById('rqDesc').value=r.desc;
-  document.getElementById('rqDocs').value=r.docTypes.join(', ');
-  closeModal('adminReqModal');openModal('addReqModal');
-}
-function saveReq(){
-  const t=document.getElementById('rqT').value.trim(),cat=document.getElementById('rqCat').value,pri=document.getElementById('rqPri').value,dl=document.getElementById('rqDl').value,asgn=document.getElementById('rqAsgn').value;
-  if(!t||!cat||!pri||!dl||!asgn){toast('⚠️','Required','Fill all required fields');return;}
-  const desc=document.getElementById('rqDesc').value,dts=document.getElementById('rqDocs').value.split(',').map(s=>s.trim()).filter(Boolean);
-  const u=USERS.find(x=>x.user===asgn),an=u?u.name:asgn;
-  if(editReqId){
-    const r=REQS.find(x=>x.id===editReqId);
-    Object.assign(r,{title:t,cat,pri,deadline:dl,assignedTo:asgn,assignedName:an,desc,docTypes:dts.length?dts:r.docTypes});
-    toast('✅','Updated',t.slice(0,40));
-  } else {
-    const nid='REQ-2025-'+String(REQS.length+1).padStart(3,'0');
-    REQS.push({id:nid,title:t,cat,pri,deadline:dl,assignedTo:asgn,assignedName:an,desc,docTypes:dts.length?dts:['Required Document'],reminder:'all',status:'pending',subs:[]});
-    NOTIFS.unshift({txt:`New requirement assigned to ${an}: ${t.slice(0,35)}`,time:'Just now',col:'var(--yellow)'});buildNotifs();
-    toast('✅','Requirement Created',t.slice(0,40));
+async function saveMeta() {
+  const doc = DOCS.find(item => item.id === curDocId);
+  if (!doc) return;
+  const form = new FormData();
+  form.append('action', 'update');
+  form.append('id', doc.dbId);
+  form.append('title', document.getElementById('emT').value.trim() || doc.title);
+  form.append('source_office', document.getElementById('emSrc').value || doc.src);
+  form.append('document_type', document.getElementById('emType').value || doc.docType);
+  form.append('retention_period', document.getElementById('emRet').value || doc.retention);
+  form.append('description', document.getElementById('emDesc').value.trim() || doc.notes);
+  document.getElementById('emAudience').value.split(',').map(v => v.trim()).filter(Boolean).forEach(role => form.append('visibility_roles[]', role));
+  form.append('extra_metadata', JSON.stringify(doc.details || {}));
+  try {
+    await apiJson('process/documentProcess.php', { method: 'POST', body: form });
+    await hydrateFromServer();
+    toast('✅', 'Metadata Saved', `${curDocId} updated.`);
+    closeModal('editMetaModal');
+  } catch (error) {
+    toast('⚠', 'Save Failed', error.message);
   }
-  addLog(`${editReqId?'Edited':'Created'} requirement: ${t.slice(0,30)}`,UNAME,'Upload','📋','rgba(14,165,233,.1)');
-  closeModal('addReqModal');buildReqs();
-}
-function deleteReq(id){
-  const r=REQS.find(x=>x.id===id);if(!r)return;
-  showConfirm('Delete Requirement','🗑',`Delete "${r.title.slice(0,40)}"? All submission history will be lost.`,()=>{
-    REQS.splice(REQS.indexOf(r),1);addLog(`Deleted requirement: ${r.title.slice(0,30)}`,UNAME,'Delete','🗑','rgba(239,68,68,.14)');
-    toast('🗑','Deleted',r.title.slice(0,40));closeModal('adminReqModal');buildReqs();
-  });
-}
-function sendReminder(id){
-  const r=REQS.find(x=>x.id===id);if(!r)return;
-  NOTIFS.unshift({txt:`Reminder sent to ${r.assignedName}: ${r.title.slice(0,40)} — deadline ${r.deadline}`,time:'Just now',col:'var(--yellow)'});buildNotifs();
-  addLog(`Sent deadline reminder for ${id} to ${r.assignedName}`,UNAME,'Upload','🔔','rgba(245,158,11,.14)');
-  toast('🔔','Reminder Sent',`Deadline reminder sent to ${r.assignedName}`);
 }
 
-// Admin: View submissions
-function openAdminReq(id){
-  const r=REQS.find(x=>x.id===id);if(!r)return;
-  curReqId=id;
-  document.getElementById('arT').textContent=r.title;
-  document.getElementById('arMeta').innerHTML=`
-    <div class="meta-item"><div class="meta-k">Req. ID</div><div class="meta-v" style="font-family:var(--mono)">${r.id}</div></div>
-    <div class="meta-item"><div class="meta-k">Deadline</div><div class="meta-v">${r.deadline} ${dlChip(r.deadline,r.status)}</div></div>
-    <div class="meta-item"><div class="meta-k">Assigned To</div><div class="meta-v">${r.assignedName}</div></div>
-    <div class="meta-item"><div class="meta-k">Status</div><div class="meta-v">${stBadge(r.status)}</div></div>`;
-  document.getElementById('arSubs').innerHTML=!r.subs.length
-    ?`<div class="empty-state" style="padding:24px"><div class="empty-ico">📄</div><div>No submissions yet</div></div>`
-    :r.subs.map((s,i)=>`
-      <div class="sub-row">
-        <span style="font-size:18px">📄</span>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:600">${s.title}</div>
-          <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">${s.type} • by ${s.by} on ${s.at}</div>
-          ${s.remarks?`<div style="font-size:11px;color:var(--text3);margin-top:2px">"${s.remarks}"</div>`:''}
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
-          <span class="badge b-${s.status}">${s.status}</span>
-          <div class="btn-row">
-            <button class="btn btn-green" onclick="reviewSub('${id}',${i},'approved')">✅ Approve</button>
-            <button class="btn btn-red" onclick="reviewSub('${id}',${i},'rejected')">❌ Reject</button>
-          </div>
-        </div>
-      </div>`).join('');
-  openModal('adminReqModal');
-}
-function reviewSub(rid,si,dec){
-  const r=REQS.find(x=>x.id===rid);if(!r||!r.subs[si])return;
-  r.subs[si].status=dec;
-  if(dec==='approved'){if(r.subs.every(s=>s.status==='approved'))r.status='approved';toast('✅','Approved',r.subs[si].title);}
-  else{r.status=daysUntil(r.deadline)<0?'overdue':'pending';toast('❌','Rejected',r.subs[si].title+' — feedback sent');NOTIFS.unshift({txt:`Submission rejected for: ${r.title.slice(0,35)}`,time:'Just now',col:'var(--red)'});buildNotifs();}
-  addLog(`${dec==='approved'?'Approved':'Rejected'} submission for ${rid}`,UNAME,'Upload',dec==='approved'?'✅':'❌','rgba(14,165,233,.1)');
-  buildReqs();openAdminReq(rid);
+function applyFilters() {
+  const query = document.getElementById('searchInp').value.toLowerCase();
+  const source = document.getElementById('fSrc').value;
+  const docType = document.getElementById('fType').value;
+  const role = document.getElementById('fRole').value;
+  const status = document.getElementById('fSt').value;
+  srchRes = DOCS.filter(doc => {
+    const text = [doc.title, doc.src, doc.docType, doc.notes, doc.audience.join(' '), ...Object.values(doc.details || {})].join(' ').toLowerCase();
+    return (!query || text.includes(query))
+      && (!source || doc.src === source)
+      && (!docType || doc.docType === docType)
+      && (!role || doc.audience.includes(role))
+      && (!status || doc.status === status);
+  });
+  srchPage = 1;
+  renderSearch();
 }
 
-// Staff: View & Submit
-function openReqView(id){
-  const r=REQS.find(x=>x.id===id);if(!r)return;
-  curReqId=id;vrFile=null;
-  document.getElementById('vrT').textContent=r.title;
-  const bm={pending:{bg:'rgba(14,165,233,.09)',bc:'rgba(14,165,233,.25)',ico:'⏳',msg:'This requirement is pending your submission.'},submitted:{bg:'rgba(139,92,246,.09)',bc:'rgba(139,92,246,.25)',ico:'📤',msg:'Your submission is under review by PSED Admin.'},approved:{bg:'rgba(16,185,129,.09)',bc:'rgba(16,185,129,.25)',ico:'✅',msg:'This requirement has been approved. No further action needed.'},rejected:{bg:'rgba(239,68,68,.09)',bc:'rgba(239,68,68,.3)',ico:'❌',msg:'Your submission was rejected. Please review feedback and resubmit.'},overdue:{bg:'rgba(239,68,68,.12)',bc:'rgba(239,68,68,.4)',ico:'🚨',msg:'This requirement is OVERDUE. Submit immediately.'}};
-  const b=bm[r.status]||bm.pending;
-  document.getElementById('vrBanner').style.cssText=`background:${b.bg};border:1px solid ${b.bc};border-radius:var(--r);padding:11px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;font-size:13px`;
-  document.getElementById('vrBanner').innerHTML=`<span style="font-size:20px">${b.ico}</span><div>${b.msg}</div>`;
-  const d=daysUntil(r.deadline),dc=r.status==='approved'?'var(--green)':d<0?'var(--red)':d<=3?'var(--red)':d<=7?'var(--yellow)':'var(--accent)';
-  document.getElementById('vrCountdown').innerHTML=`
-    <div><div class="countdown-lbl">PSED DEADLINE</div><div style="font-size:13px;font-family:var(--mono);margin-top:2px">${r.deadline}</div></div>
-    <div style="text-align:center"><div class="countdown-val" style="color:${dc}">${r.status==='approved'?'DONE':d<0?Math.abs(d):d===0?'NOW':d}</div><div class="countdown-lbl">${r.status==='approved'?'Completed':d<0?'DAYS OVERDUE':d===0?'DUE TODAY':'DAYS LEFT'}</div></div>
-    <div style="text-align:right"><div class="countdown-lbl">PRIORITY</div><div class="pri-chip pc-${r.pri}" style="margin-top:3px;display:inline-block">${r.pri}</div></div>`;
-  document.getElementById('vrMeta').innerHTML=`
-    <div class="meta-item"><div class="meta-k">Req. ID</div><div class="meta-v" style="font-family:var(--mono)">${r.id}</div></div>
-    <div class="meta-item"><div class="meta-k">Category</div><div class="meta-v">${r.cat}</div></div>
-    <div class="meta-item"><div class="meta-k">Issued By</div><div class="meta-v">PSED Admin</div></div>
-    <div class="meta-item"><div class="meta-k">Status</div><div class="meta-v">${stBadge(r.status)}</div></div>`;
-  document.getElementById('vrDesc').textContent=r.desc;
-  const done=r.subs.filter(s=>s.status==='approved').map(s=>s.type);
-  document.getElementById('vrChecklist').innerHTML=r.docTypes.map(dt=>{const ok=done.includes(dt);return`<div class="doc-check-item"><div class="dc-icon ${ok?'dc-done':'dc-todo'}">${ok?'✓':'○'}</div><span style="${ok?'text-decoration:line-through;color:var(--text3)':''}">${dt}</span>${ok?`<span style="margin-left:auto;font-size:9px;color:var(--green);font-family:var(--mono)">Approved</span>`:''}</div>`;}).join('');
-  document.getElementById('vrHistory').innerHTML=!r.subs.length?`<div style="font-size:12px;color:var(--text3);padding:8px 0">No submissions yet.</div>`:r.subs.map(s=>`<div class="sub-row"><span style="font-size:16px">📄</span><div style="flex:1"><div style="font-size:13px;font-weight:600">${s.title}</div><div style="font-size:11px;color:var(--text2);font-family:var(--mono)">${s.type} • ${s.at}</div>${s.remarks?`<div style="font-size:11px;color:var(--text3);margin-top:2px">"${s.remarks}"</div>`:''}</div><span class="badge b-${s.status}">${s.status}</span></div>`).join('');
-  const sel=document.getElementById('vrDocType');sel.innerHTML=r.docTypes.map(dt=>`<option>${dt}</option>`).join('');
-  document.getElementById('vrDocTitle').value='';document.getElementById('vrRemarks').value='';document.getElementById('vrFileLbl').textContent='';
-  document.getElementById('vrDrop').style.borderColor='var(--border)';
-  document.getElementById('vrSubmitSec').style.display=r.status==='approved'?'none':'block';
-  document.getElementById('vrActs').innerHTML=`<button class="btn" onclick="closeModal('viewReqModal')">✕ Close</button>${r.status!=='approved'?`<button class="btn btn-blue" onclick="submitCompliance('${r.id}')">📤 Submit Document</button>`:''}`;
-  openModal('viewReqModal');
+function doSearch(query) {
+  document.getElementById('searchInp').value = query;
+  applyFilters();
 }
-function setVrFile(f){if(!f)return;if(!f.name.toLowerCase().endsWith('.pdf')){toast('❌','Invalid','PDF only');return;}vrFile=f;document.getElementById('vrFileLbl').textContent='📎 '+f.name;document.getElementById('vrDrop').style.borderColor='var(--accent)';}
-function submitCompliance(rid){
-  const r=REQS.find(x=>x.id===rid);if(!r)return;
-  const t=document.getElementById('vrDocTitle').value.trim(),tp=document.getElementById('vrDocType').value,rm=document.getElementById('vrRemarks').value.trim();
-  if(!t){toast('⚠️','Required','Enter the document title');return;}
-  const nid='DOC-2025-'+String(Math.floor(Math.random()*9000)+1000);
-  r.subs.push({docId:nid,title:t,type:tp,by:UNAME,at:new Date().toISOString().slice(0,10),status:'submitted',remarks:rm});
-  r.status='submitted';
-  DOCS.push({id:nid,title:t,src:'PSED Compliance Submission',cat:r.cat,date:new Date().toISOString().slice(0,10),status:'active',size:vrFile?(vrFile.size/1024).toFixed(1)+' KB':'0.5 MB',pages:1,ocr:`COMPLIANCE SUBMISSION\nRequirement: ${r.title}\nSubmitted by: ${UNAME}\n${rm?'Remarks: '+rm:''}`});
-  addLog(`Submitted compliance for ${rid}: ${t}`,UNAME,'Upload','📤','rgba(139,92,246,.14)');
-  NOTIFS.unshift({txt:`Compliance submitted for review: ${r.title.slice(0,40)}`,time:'Just now',col:'var(--purple)'});buildNotifs();
-  toast('📤','Submitted',`"${t}" submitted to PSED Admin for review`);
-  buildReqs();openReqView(rid);
+
+function renderSearch() {
+  const query = document.getElementById('searchInp').value.trim();
+  const regex = query ? new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi') : null;
+  const highlight = value => regex ? String(value).replace(regex, match => `<span class="hl">${match}</span>`) : value;
+  const paged = srchRes.slice((srchPage - 1) * PP, srchPage * PP);
+  document.getElementById('srchCount').textContent = `${srchRes.length} document(s) found`;
+  document.getElementById('srchResults').innerHTML = paged.length ? paged.map(doc => `
+    <div class="res-card" onclick="openDoc('${doc.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px"><div class="res-title">${highlight(doc.title)}</div><span class="badge b-${doc.status}">${doc.status}</span></div>
+      <div class="res-meta"><span>📍 ${highlight(doc.src)}</span><span>📂 ${highlight(doc.docType)}</span><span>🔒 ${highlight(doc.audience.join(', '))}</span><span>📅 ${doc.date}</span><span>${doc.id}</span></div>
+      <div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.6">${highlight((doc.notes || 'No description available.').slice(0, 120))}</div>
+      <div class="btn-row" style="margin-top:10px" onclick="event.stopPropagation()"><button class="btn btn-blue" onclick="openDoc('${doc.id}')">👁 View</button><button class="btn" onclick="dlDoc('${doc.id}')">⬇ Download</button>${ROLE !== 'Agency' ? `<button class="btn" onclick="openEditMeta('${doc.id}')">✏ Edit</button>` : ''}</div>
+    </div>
+  `).join('') : `<div class="empty-state"><div class="empty-ico">🔍</div><div>No documents match your search.</div></div>`;
+  buildPager('srchPager', srchRes.length, PP, srchPage, page => { srchPage = page; renderSearch(); });
 }
-function injectDeadlineNotifs(){
-  getMyReqs().forEach(r=>{
-    if(r.status==='approved')return;
-    const d=daysUntil(r.deadline);
-    if(d<0)NOTIFS.unshift({txt:`🚨 OVERDUE: ${r.title.slice(0,40)} (${Math.abs(d)}d ago)`,time:'Alert',col:'var(--red)'});
-    else if(d<=7)NOTIFS.unshift({txt:`📋 Due in ${d===0?'TODAY':d+'d'}: ${r.title.slice(0,40)}`,time:'Reminder',col:d<=3?'var(--red)':'var(--yellow)'});
+
+function clearFilters() {
+  ['fSrc', 'fType', 'fRole', 'fSt'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('searchInp').value = '';
+  applyFilters();
+}
+
+function exportCSV() {
+  toast('📥', 'Exported', 'Documents exported as CSV.');
+}
+
+function setSelectOptions(selectId, options, placeholder) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  const currentValue = select.value;
+  select.innerHTML = [`<option value="">${placeholder}</option>`, ...options.map(option => `<option value="${option}">${option}</option>`)].join('');
+  if (options.includes(currentValue)) select.value = currentValue;
+}
+
+function renderPrimeFolderSelectors() {
+  setSelectOptions('prFolder1', Object.keys(PRIME_FOLDER_TREE), 'Select core area…');
+  const coreAreaSelect = document.getElementById('prFolder1');
+  if (coreAreaSelect && !coreAreaSelect.value && coreAreaSelect.options.length > 1) {
+    coreAreaSelect.selectedIndex = 1;
+  }
+  setSelectOptions('prFolder2', [], 'Select pillar…');
+  setSelectOptions('prFolder3', [], 'Select pillar element…');
+  setSelectOptions('prIndicator', [], 'Select indicator…');
+  updatePrimeFolderSelectors();
+}
+
+function updatePrimeFolderSelectors() {
+  const coreArea = document.getElementById('prFolder1').value;
+  const pillarSelect = document.getElementById('prFolder2');
+  const elementSelect = document.getElementById('prFolder3');
+  const indicatorSelect = document.getElementById('prIndicator');
+
+  const pillarOptions = coreArea ? Object.keys(PRIME_FOLDER_TREE[coreArea] || {}) : [];
+  setSelectOptions('prFolder2', pillarOptions, 'Select pillar…');
+  if (pillarOptions.length && !pillarSelect.value) {
+    pillarSelect.value = pillarOptions[0];
+  }
+
+  const pillar = pillarSelect.value;
+  const elementOptions = coreArea && pillar ? (PRIME_FOLDER_TREE[coreArea]?.[pillar] || []) : [];
+  setSelectOptions('prFolder3', elementOptions, 'Select pillar element…');
+  if (elementOptions.length && !elementSelect.value) {
+    elementSelect.value = elementOptions[0];
+  }
+
+  const indicatorOptions = elementSelect.value ? buildIndicatorOptions(elementSelect.value) : [];
+  setSelectOptions('prIndicator', indicatorOptions, 'Select indicator…');
+  if (indicatorOptions.length && !indicatorSelect.value) {
+    indicatorSelect.value = indicatorOptions[0];
+  }
+
+  pillarSelect.disabled = !pillarOptions.length;
+  elementSelect.disabled = !elementOptions.length;
+  indicatorSelect.disabled = !indicatorOptions.length;
+  updatePrimeFolderPreview();
+}
+
+function buildIndicatorOptions(element) {
+  return SAMPLE_INDICATOR_CODES.map(code => `${code} - ${element} (${INDICATOR_PLACEHOLDER})`);
+}
+
+function getPrimeFolderPath() {
+  const parts = [getPrimeAgencyName()];
+  ['prFolder1', 'prFolder2', 'prFolder3'].forEach(id => {
+    const value = document.getElementById(id).value;
+    if (value) parts.push(value);
   });
+  return parts.join(' / ');
+}
+
+function updatePrimeFolderPreview() {
+  const indicator = document.getElementById('prIndicator').value;
+  document.getElementById('primePathPreview').textContent = `Upload path: ${getPrimeFolderPath()}${indicator ? ` / ${indicator}` : ''}`;
+}
+
+function isPrimeFolderSelectionComplete() {
+  return !!(document.getElementById('prFolder1').value && document.getElementById('prFolder2').value && document.getElementById('prFolder3').value && document.getElementById('prIndicator').value);
+}
+
+function handlePrimeFile(file) {
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith('.pdf')) return toast('❌', 'Invalid', 'PDF only.');
+  primeFile = file;
+  document.getElementById('primeFileCard').classList.add('show');
+  document.getElementById('primeFileName').textContent = file.name;
+  document.getElementById('primeFileSize').textContent = `${(file.size / 1024).toFixed(1)} KB`;
+}
+
+function clearPrimeFile() {
+  primeFile = null;
+  document.getElementById('prFile').value = '';
+  document.getElementById('primeFileCard').classList.remove('show');
+}
+
+function buildPrime() {
+  const isAdmin = ROLE === 'PSED Admin';
+  document.getElementById('req-acts').innerHTML = `
+    <button class="btn" onclick="toast('📥','Exported','Submission list exported')">📥 Export ${isAdmin ? 'Agency List' : 'My Submissions'}</button>
+    ${isAdmin && primeAgencyFilter ? `<button class="btn" onclick="clearPrimeAgencyFilter()">↺ Show All Agencies</button>` : ''}
+  `;
+  document.getElementById('primeUploadWrap').style.display = isAdmin ? 'none' : '';
+  document.getElementById('primeAdminWrap').style.display = isAdmin ? '' : 'none';
+  if (isAdmin && primeAgencyFilter) {
+    const agencyUser = USERS.find(user => user.user === primeAgencyFilter);
+    document.getElementById('primeSubTitle').textContent = `${agencyUser?.agency || agencyUser?.name || primeAgencyFilter} ER Submissions`;
+  } else {
+    document.getElementById('primeSubTitle').textContent = isAdmin ? 'Recent ER Submissions' : 'My Submissions';
+  }
+  buildPrimeStats();
+  buildPrimeAgencyTable();
+  buildPrimeTable();
+}
+
+function buildPrimeStats() {
+  const agencies = USERS.filter(user => user.access === 'Agency');
+  const isAdmin = ROLE === 'PSED Admin';
+  const mySubs = PRIME_SUBMISSIONS.filter(item => item.account === UNAME).length;
+  const submitted = PRIME_SUBMISSIONS.filter(item => item.status === 'submitted').length;
+  const inReview = PRIME_SUBMISSIONS.filter(item => item.status === 'under review').length;
+  const received = PRIME_SUBMISSIONS.filter(item => item.status === 'received').length;
+  document.getElementById('prime-stats').innerHTML = `
+    <div class="stat-card" style="--sc:var(--accent);cursor:default"><div class="sc-lbl">${isAdmin ? 'Registered Agencies' : 'My ER Submissions'}</div><div class="sc-val" style="color:var(--accent)">${isAdmin ? agencies.length : mySubs}</div><div class="sc-sub">${isAdmin ? 'Agency accounts managed by admin' : 'Uploads from this agency account'}</div><div class="sc-ico">📎</div></div>
+    <div class="stat-card" style="--sc:var(--yellow);cursor:default"><div class="sc-lbl">Submitted / In Review</div><div class="sc-val" style="color:var(--yellow)">${submitted + inReview}</div><div class="sc-sub">Pending acknowledgment</div><div class="sc-ico">⏳</div></div>
+    <div class="stat-card" style="--sc:var(--green);cursor:default"><div class="sc-lbl">Received</div><div class="sc-val" style="color:var(--green)">${received}</div><div class="sc-sub">Accepted by PSED</div><div class="sc-ico">✅</div></div>
+  `;
+}
+
+function buildPrimeAgencyTable() {
+  const body = document.getElementById('primeAgencyTbl');
+  const count = document.getElementById('primeAgencyCount');
+  if (!body || !count) return;
+  const agencies = USERS.filter(user => user.access === 'Agency');
+  count.textContent = `${agencies.length} registered agenc${agencies.length === 1 ? 'y' : 'ies'}`;
+  body.innerHTML = agencies.length ? agencies.map(user => {
+    const submissions = PRIME_SUBMISSIONS.filter(item => item.account === user.user);
+    const lastSubmission = submissions.length ? submissions[0].submitted : 'No submission';
+    return `<tr><td>${user.agency || user.name}</td><td class="mono-sm">${user.user}</td><td><span class="badge b-${user.status === 'Active' ? 'active' : 'failed'}">${user.status}</span></td><td>${submissions.length}</td><td class="mono-sm">${lastSubmission}</td><td><div class="btn-row"><button class="btn btn-blue" onclick="viewAgencySubmissions('${user.user}')">👁 View Submissions</button></div></td></tr>`;
+  }).join('') : `<tr><td colspan="6"><div class="empty-state"><div class="empty-ico">🌐</div><div>No registered agencies yet.</div></div></td></tr>`;
+}
+
+function buildPrimeTable() {
+  let list = ROLE === 'PSED Admin' ? PRIME_SUBMISSIONS : PRIME_SUBMISSIONS.filter(item => item.account === UNAME);
+  if (ROLE === 'PSED Admin' && primeAgencyFilter) {
+    list = list.filter(item => item.account === primeAgencyFilter);
+  }
+  document.getElementById('primeCount').textContent = `${list.length} submission(s)`;
+  document.getElementById('primeTbl').innerHTML = list.length ? list.map(item => `
+    <tr>
+      <td class="mono-sm">${item.id}</td>
+      <td>${item.agency}</td>
+      <td>${item.originalFileName}</td>
+      <td>${item.savedFileName}</td>
+      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${item.folderPath}">${item.folderPath}</td>
+      <td class="mono-sm">${item.submitted}</td>
+      <td><span class="badge b-${item.status === 'received' ? 'approved' : item.status === 'under review' ? 'processing' : 'submitted'}">${item.status}</span></td>
+      <td><div class="btn-row"><button class="btn btn-blue" onclick="viewPrimeSubmission('${item.id}')">👁 View</button><button class="btn" onclick="downloadPrimeSubmission('${item.id}')">⬇ Download</button></div></td>
+    </tr>
+  `).join('') : `<tr><td colspan="8"><div class="empty-state"><div class="empty-ico">📭</div><div>No ER submissions found for this agency.</div></div></td></tr>`;
+}
+
+function legacySubmitPrime() {
+  if (ROLE !== 'Agency') return toast('🚫', 'Denied', 'Only agency accounts can upload ERs.');
+  if (!primeFile || !isPrimeFolderSelectionComplete()) return toast('⚠', 'Required', 'Select the PRIME-HRM hierarchy, indicator, and attach a PDF.');
+  const user = getCurrentUser();
+  const agency = user?.agency || user?.name || 'Agency';
+  const id = `ER-2026-${String(Math.floor(Math.random() * 900) + 100).padStart(3, '0')}`;
+  const indicator = document.getElementById('prIndicator').value;
+  const indicatorCode = indicator.split(' - ')[0] || INDICATOR_CODE_PLACEHOLDER;
+  const savedFileName = `${indicatorCode}-${primeFile.name}`;
+  PRIME_SUBMISSIONS.unshift({
+    id,
+    agency,
+    account: UNAME,
+    originalFileName: primeFile.name,
+    savedFileName,
+    folderPath: getPrimeFolderPath(),
+    coreArea: document.getElementById('prFolder1').value,
+    pillar: document.getElementById('prFolder2').value,
+    element: document.getElementById('prFolder3').value,
+    indicator,
+    indicatorCode,
+    submitted: todayISO(),
+    status: 'submitted',
+    size: `${(primeFile.size / 1024).toFixed(1)} KB`,
+  });
+  addLog(`Submitted ${id}`, UNAME, 'Upload', '📎', 'rgba(16,185,129,.14)');
+  NOTIFS.unshift({ txt: `PRIME-HRM submission received from ${agency}`, time: 'Just now', col: 'var(--green)' });
+  clearPrimeFile();
+  renderPrimeFolderSelectors();
+  buildAll();
+  toast('✅', 'Submitted', `${savedFileName} added to My Submissions.`);
+}
+
+function viewPrimeSubmission(id) {
+  const item = PRIME_SUBMISSIONS.find(entry => entry.id === id);
+  if (!item) return;
+  toast('👁', 'Submission Details', `${item.savedFileName} • ${item.folderPath}`);
+}
+
+function downloadPrimeSubmission(id) {
+  const item = PRIME_SUBMISSIONS.find(entry => entry.id === id);
+  if (!item) return;
+  addLog(`Downloaded ${id}`, UNAME, 'Download', '📥', 'rgba(16,185,129,.14)');
+  toast('📥', 'Download Started', item.savedFileName);
+}
+
+function viewAgencySubmissions(userName) {
+  const list = PRIME_SUBMISSIONS.filter(item => item.account === userName);
+  const user = USERS.find(item => item.user === userName);
+  const agency = user?.agency || user?.name || userName;
+  primeAgencyFilter = userName;
+  buildPrime();
+  toast('👁', 'Agency Submissions', `${agency} has ${list.length} submission(s).`);
+}
+
+function clearPrimeAgencyFilter() {
+  primeAgencyFilter = '';
+  buildPrime();
+}
+
+function buildUsers(list) {
+  document.getElementById('umAdminCount').textContent = USERS.filter(user => user.access === 'PSED Admin').length;
+  document.getElementById('umInternalCount').textContent = USERS.filter(user => user.access === 'Internal').length;
+  document.getElementById('umAgencyCount').textContent = USERS.filter(user => user.access === 'Agency').length;
+  document.getElementById('usersGrid').innerHTML = list.map(user => `
+    <div class="user-card">
+      <div class="uc-hd"><div class="uc-av" style="background:${user.av}">${user.ini}</div><div><div class="uc-name">${user.name}</div><div class="uc-dept">${user.agency || user.dept}</div></div></div>
+      <div class="uc-role r-${user.access.toLowerCase().replace(/\s+/g, '-')}">${user.access}</div>
+      <div class="perms-wrap">${user.roles.length ? user.roles.map(role => `<span class="perm">${role}</span>`).join('') : '<span class="perm">No internal role</span>'}</div>
+      <div class="status-dot" style="color:${user.status === 'Active' ? 'var(--green)' : 'var(--red)'}">● ${user.status}</div>
+      <div class="btn-row">${ROLE === 'PSED Admin' ? `<button class="btn btn-blue" onclick="openEditUser(${user.id})">✏ Edit</button>` : ''}${ROLE === 'PSED Admin' && user.user !== UNAME ? `<button class="btn btn-red" onclick="suspendUser(${user.id})">${user.status === 'Active' ? 'Suspend' : 'Activate'}</button>` : ''}</div>
+    </div>
+  `).join('');
+}
+
+function renderInternalRoleList() {
+  document.getElementById('internalRoleList').innerHTML = INTERNAL_ROLES.map(role => `<span class="role-pill">${role}</span>`).join('');
+}
+
+function filterUsers(access) {
+  buildUsers(access === 'all' ? USERS : USERS.filter(user => user.access === access));
+}
+
+function searchUsers(query) {
+  const value = query.toLowerCase();
+  buildUsers(USERS.filter(user => [user.name, user.user, user.dept, user.agency, user.access, user.roles.join(' ')].join(' ').toLowerCase().includes(value)));
+}
+
+function toggleUserRoleFields(prefix) {
+  const access = document.getElementById(`${prefix}Access`).value;
+  const roleField = document.getElementById(`${prefix}RolesField`);
+  const agencyField = document.getElementById(`${prefix}AgencyField`);
+  if (roleField) roleField.style.display = access === 'Internal' ? '' : 'none';
+  if (agencyField) agencyField.style.display = access === 'Agency' ? '' : 'none';
+}
+
+function getUserRoles(prefix) {
+  return getSelectedRoles(`${prefix}RolesBox`).filter(role => role !== 'All Personnel');
+}
+
+function openEditUser(id) {
+  const user = USERS.find(item => item.id === id);
+  if (!user) return;
+  editUserId = id;
+  document.getElementById('euName').value = user.name;
+  document.getElementById('euUser').value = user.user;
+  document.getElementById('euAccess').value = user.access;
+  document.getElementById('euDept').value = user.dept;
+  document.getElementById('euAgency').value = user.agency || '';
+  document.getElementById('euEmail').value = user.email;
+  document.getElementById('euStatus').value = user.status;
+  renderRoleCheckboxes('euRolesBox', user.roles.length ? user.roles : ['All Personnel']);
+  toggleUserRoleFields('eu');
+  openModal('editUserModal');
+}
+
+function legacySaveEditUser() {
+  const user = USERS.find(item => item.id === editUserId);
+  if (!user) return;
+  user.name = document.getElementById('euName').value.trim() || user.name;
+  user.user = document.getElementById('euUser').value.trim() || user.user;
+  user.access = document.getElementById('euAccess').value;
+  user.dept = document.getElementById('euDept').value.trim() || user.dept;
+  user.agency = user.access === 'Agency' ? (document.getElementById('euAgency').value.trim() || user.name) : '';
+  user.email = document.getElementById('euEmail').value.trim() || user.email;
+  user.status = document.getElementById('euStatus').value;
+  user.roles = user.access === 'Internal' ? getUserRoles('eu') : [];
+  user.perms = buildPermissions(user.access);
+  addLog(`Edited user: ${user.name}`, UNAME, 'Upload', '✏', 'rgba(139,92,246,.1)');
+  buildAll();
+  toast('✅', 'Saved', `${user.name} updated.`);
+  closeModal('editUserModal');
+}
+
+function legacySuspendUser(id) {
+  const user = USERS.find(item => item.id === id);
+  if (!user) return;
+  showConfirm(user.status === 'Active' ? 'Suspend User' : 'Reactivate User', '⚠', `${user.status === 'Active' ? 'Suspend' : 'Reactivate'} account for ${user.name}?`, () => {
+    user.status = user.status === 'Active' ? 'Suspended' : 'Active';
+    addLog(`${user.status === 'Active' ? 'Activated' : 'Suspended'}: ${user.name}`, UNAME, 'Upload', '⚠', 'rgba(239,68,68,.1)');
+    buildAll();
+    toast('✅', 'Done', `${user.name} account updated.`);
+  });
+}
+
+function legacyAddUser() {
+  const name = document.getElementById('nuName').value.trim();
+  const userName = document.getElementById('nuUser').value.trim();
+  const access = document.getElementById('nuAccess').value;
+  if (!name || !userName) return toast('⚠', 'Required', 'Name and username are required.');
+  USERS.push({
+    id: USERS.length + 1,
+    name,
+    user: userName,
+    dept: document.getElementById('nuDept').value.trim() || 'PSED',
+    agency: access === 'Agency' ? (document.getElementById('nuAgency').value.trim() || name) : '',
+    access,
+    roles: access === 'Internal' ? getUserRoles('nu') : [],
+    email: document.getElementById('nuEmail').value.trim() || `${userName}@psed.gov.ph`,
+    status: 'Active',
+    av: ['linear-gradient(135deg,#0ea5e9,#0369a1)', 'linear-gradient(135deg,#10b981,#047857)', 'linear-gradient(135deg,#f97316,#b45309)'][Math.floor(Math.random() * 3)],
+    ini: name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase(),
+    perms: buildPermissions(access),
+  });
+  addLog(`New user: ${name} (${access})`, UNAME, 'Upload', '👤', 'rgba(14,165,233,.1)');
+  ['nuName', 'nuUser', 'nuDept', 'nuAgency', 'nuEmail', 'nuPwd'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('nuAccess').value = 'Internal';
+  renderRoleCheckboxes('nuRolesBox');
+  toggleUserRoleFields('nu');
+  buildAll();
+  toast('✅', 'User Added', `${name} (${access})`);
+  closeModal('addUserModal');
+}
+
+function buildPermissions(access) {
+  if (access === 'PSED Admin') return ['Internal Upload', 'Repository Access', 'User Management', 'Notifications', 'Logs'];
+  if (access === 'Agency') return ['PRIME-HRM Upload'];
+  return ['Internal Upload', 'Repository Access', 'Notifications'];
+}
+
+function addLog(act, usr, type, ico, bg) {
+  LOGS.unshift({ act, usr, type, time: new Date().toISOString().slice(0, 16).replace('T', ' '), ico, bg });
+  if (document.getElementById('pg-logs').classList.contains('active')) renderLogs();
+}
+
+function updateLogUserFilter() {
+  const select = document.getElementById('logUsr');
+  const current = select.value;
+  select.innerHTML = '<option value="">All Users</option>' + USERS.map(user => `<option>${user.user}</option>`).join('');
+  select.value = current;
+}
+
+function renderLogs() {
+  const action = document.getElementById('logAct').value;
+  const user = document.getElementById('logUsr').value;
+  const date = document.getElementById('logDate').value;
+  const filtered = LOGS.filter(log => (!action || log.type === action || log.act.toLowerCase().includes(action.toLowerCase())) && (!user || log.usr === user) && (!date || log.time.startsWith(date)));
+  document.getElementById('logCount').textContent = `${filtered.length} record(s)`;
+  const paged = filtered.slice((logsPage - 1) * LP, logsPage * LP);
+  document.getElementById('logsList').innerHTML = paged.length ? paged.map(log => `<div class="log-item"><div class="log-ico" style="background:${log.bg}">${log.ico}</div><div style="flex:1"><div class="log-act">${log.act}</div><div class="log-usr">by ${log.usr}</div></div><div class="log-time">${log.time}</div></div>`).join('') : `<div class="empty-state"><div class="empty-ico">📋</div><div>No log entries found.</div></div>`;
+  buildPager('logsPager', filtered.length, LP, logsPage, page => { logsPage = page; renderLogs(); });
+}
+
+function resetLogFilters() {
+  ['logAct', 'logUsr'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('logDate').value = '';
+  logsPage = 1;
+  renderLogs();
+}
+
+function confirmClearLogs() {
+  showConfirm('Clear All Logs', '⚠', 'This will permanently delete all activity logs.', () => {
+    LOGS.length = 0;
+    renderLogs();
+    toast('🗑', 'Cleared', 'All logs removed.');
+  });
+}
+
+function legacySaveAllSettings() {
+  toast('💾', 'All Settings Saved', 'All configurations updated successfully.');
+}
+
+function legacySaveProfile() {
+  const user = getCurrentUser();
+  if (!user) return;
+  user.name = document.getElementById('profName').value.trim() || user.name;
+  user.user = document.getElementById('profUser').value.trim() || user.user;
+  user.email = document.getElementById('profEmail').value.trim() || user.email;
+  addLog('Updated profile settings', UNAME, 'Settings', '⚙', 'rgba(100,116,139,.1)');
+  toast('✅', 'Profile Saved', `${user.name} profile updated.`);
+  document.getElementById('profPwd').value = '';
+  initApp();
+}
+
+function sendNotification() {
+  const audience = document.getElementById('notifAudience').value;
+  const subject = document.getElementById('notifSubject').value.trim();
+  const message = document.getElementById('notifMessage').value.trim();
+  if (!subject || !message) return toast('⚠', 'Required', 'Subject and message are required.');
+  NOTIFS.unshift({ txt: `${subject} — ${audience}`, time: 'Just now', col: 'var(--purple)' });
+  addLog(`Sent notification to ${audience}`, UNAME, 'Settings', '📣', 'rgba(139,92,246,.14)');
+  document.getElementById('notifSubject').value = '';
+  document.getElementById('notifMessage').value = '';
+  buildNotifs();
+  toast('📣', 'Notification Sent', 'Notification added to the activity stream.');
+}
+
+function runBackup() {
+  toast('💾', 'Backup Started', 'Creating system backup…');
+  setTimeout(() => toast('✅', 'Backup Complete', 'All data backed up.'), 2200);
+}
+
+function confirmReset() {
+  showConfirm('Reset System', '⚠', 'Reset all system settings to defaults? Data will not be deleted.', () => {
+    toast('⚙', 'Reset', 'Settings restored to defaults.');
+  });
+}
+
+function buildNotifs() {
+  const list = document.getElementById('notifList');
+  if (!NOTIFS.length) {
+    list.innerHTML = `<div class="np-empty">No notifications</div>`;
+    document.getElementById('notifBtn').classList.remove('dot');
+    return;
+  }
+  list.innerHTML = NOTIFS.map((notif, index) => `<div class="np-item" onclick="dismissNotif(${index})"><div class="np-dot" style="background:${notif.col}"></div><div><div class="np-txt">${notif.txt}</div><div class="np-time">${notif.time}</div></div></div>`).join('');
+  document.getElementById('notifBtn').classList.add('dot');
+}
+
+function dismissNotif(index) {
+  NOTIFS.splice(index, 1);
   buildNotifs();
 }
 
-// ═══════════════════════════════════════
-//  OCR
-// ═══════════════════════════════════════
-function buildOCR(){
-  const pend=OCR_Q.filter(x=>x.status==='pending').length,fail=OCR_Q.filter(x=>x.status==='failed').length;
-  document.getElementById('nb-ocr').textContent=pend+fail;
-  document.getElementById('ocr-stats').innerHTML=`
-    <div class="stat-card" style="--sc:var(--yellow);cursor:default"><div class="sc-lbl">Pending Queue</div><div class="sc-val" style="color:var(--yellow)">${pend}</div><div class="sc-sub">Awaiting processing</div></div>
-    <div class="stat-card" style="--sc:var(--green);cursor:default"><div class="sc-lbl">Completed Today</div><div class="sc-val" style="color:var(--green)">87</div><div class="sc-sub">98.8% avg accuracy</div></div>
-    <div class="stat-card" style="--sc:var(--red);cursor:default"><div class="sc-lbl">Failed / Retry</div><div class="sc-val" style="color:var(--red)">${fail}</div><div class="sc-sub">Need attention</div></div>`;
-  const t=document.getElementById('ocrTbl');t.innerHTML='';
-  OCR_Q.forEach((d,i)=>{
-    const ph=d.status==='processing'?`<div><div class="mini-prog"><div class="mini-fill" style="width:${d.prog}%"></div></div><div style="font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:2px">${d.prog}%</div></div>`:(d.status==='failed'?`<span style="color:var(--red);font-size:10px">Error</span>`:`<span style="color:var(--text3);font-size:10px">Queued</span>`);
-    t.innerHTML+=`<tr><td class="mono-sm">${d.id}</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.title}</td><td>${d.src}</td><td class="mono-sm">${d.date}</td><td><span class="badge b-${d.status}">${d.status}</span></td><td>${ph}</td><td class="mono-sm">${d.acc}</td>
-    <td><div class="btn-row">${d.status==='failed'?`<button class="btn btn-yellow" onclick="retryOCR(${i})">Retry</button>`:`<button class="btn btn-blue" onclick="processOCR(${i})">Process</button>`}<button class="btn" onclick="viewOCRResult('${d.id}')">Result</button>${ROLE==='Admin'?`<button class="btn btn-red" onclick="removeOCR(${i})">✕</button>`:''}</div></td></tr>`;
-  });
+function clearNotifs() {
+  NOTIFS = [];
+  buildNotifs();
+  closeNotif();
 }
-function processOCR(i){
-  const it=OCR_Q[i];if(!it)return;
-  if(it.status==='processing'){toast('⚡','Processing',it.id+' is already running');return;}
-  it.status='processing';it.prog=0;buildOCR();
-  let p=0;const iv=setInterval(()=>{p+=Math.random()*12;if(p>100)p=100;it.prog=Math.floor(p);buildOCR();
-    if(p>=100){clearInterval(iv);it.status='active';it.acc='98.'+Math.floor(Math.random()*9)+'%';
-      const d=DOCS.find(x=>x.id===it.id);if(d){d.status='active';d.ocr='OCR EXTRACTED TEXT\n\n'+it.title+'\n\nText successfully extracted. Accuracy: '+it.acc+'\n\nContent available for full-text search...';}
-      addLog(`OCR completed for ${it.id}`,`SYSTEM`,'Upload','🔎','rgba(14,165,233,.1)');
-      buildOCR();buildDashTable();toast('✅','OCR Complete',it.id+' — accuracy '+it.acc);
-    }},180);
-}
-function retryOCR(i){OCR_Q[i].status='pending';OCR_Q[i].prog=0;buildOCR();processOCR(i);}
-function removeOCR(i){OCR_Q.splice(i,1);buildOCR();toast('🗑','Removed','Item removed from queue');}
-function processAllOCR(){const p=OCR_Q.filter(x=>x.status==='pending'||x.status==='failed');if(!p.length){toast('ℹ','Empty','No pending items in queue');return;}p.forEach((_,j)=>{const idx=OCR_Q.indexOf(p[j]);if(idx>=0)setTimeout(()=>processOCR(idx),j*900);});toast('⚡','Processing All',`Started OCR for ${p.length} document(s)`);}
-function refreshOCR(){buildOCR();toast('↺','Refreshed','OCR queue updated');}
-function viewOCRResult(id){
-  const it=OCR_Q.find(x=>x.id===id),d=DOCS.find(x=>x.id===id);
-  const steps=[{s:'File Validation',r:'PDF confirmed',ok:true},{s:'Image Extraction',r:'Pages extracted',ok:true},{s:'Text Recognition',r:it?.status==='failed'?'Error: Low image quality':'Text extracted',ok:it?.status!=='failed'},{s:'Post-processing',r:it?.status==='active'?'Text normalized':'Pending',ok:it?.status==='active'},{s:'Indexing',r:it?.status==='active'?'Indexed for search':'Pending',ok:it?.status==='active'}];
-  document.getElementById('ocrSteps').innerHTML=steps.map(s=>`<div class="ocr-step"><div class="step-ico" style="background:${s.ok?'rgba(16,185,129,.18)':'rgba(239,68,68,.18)'}">${s.ok?'✅':'❌'}</div><div><div style="font-weight:600">${s.s}</div><div style="font-size:11px;color:var(--text2)">${s.r}</div></div></div>`).join('');
-  document.getElementById('ocrTxt').textContent=(d&&d.ocr)?d.ocr:'Awaiting OCR processing…';
-  openModal('ocrModal');
-}
-function copyOCR(){const t=document.getElementById('ocrTxt').textContent;navigator.clipboard&&navigator.clipboard.writeText(t);toast('📋','Copied','OCR text copied to clipboard');}
 
-// ═══════════════════════════════════════
-//  ARCHIVE
-// ═══════════════════════════════════════
-function buildArchive(filter=''){
-  let list=DOCS.filter(d=>d.status==='archived');
-  if(archTab==='recent')list=list.slice(0,4);
-  else if(archTab==='pending')list=DOCS.filter(d=>d.status==='active'||d.status==='processing').slice(0,3);
-  if(filter)list=list.filter(d=>(d.title+d.src).toLowerCase().includes(filter.toLowerCase()));
-  if(archSort==='asc')list=[...list].sort((a,b)=>a.date.localeCompare(b.date));
-  const paged=list.slice((archPage-1)*AP,archPage*AP);
-  const t=document.getElementById('archTbl');t.innerHTML='';
-  if(!paged.length){t.innerHTML=`<tr><td colspan="7"><div class="empty-state"><div class="empty-ico">📦</div><div>No archived documents found</div></div></td></tr>`;document.getElementById('archPager').innerHTML='';return;}
-  const isA=ROLE==='Admin';
-  paged.forEach(d=>{
-    t.innerHTML+=`<tr><td class="mono-sm">${d.id}</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.title}</td><td>${d.src}</td><td><span class="badge" style="background:var(--navy3);color:var(--text2)">${d.cat}</span></td><td class="mono-sm">${d.date}</td><td class="mono-sm">5 Years</td>
-    <td><div class="btn-row"><button class="btn btn-blue" onclick="openDoc('${d.id}')">👁 View</button><button class="btn" onclick="dlDoc('${d.id}')">⬇</button>${isA?`<button class="btn btn-green" onclick="restoreDoc('${d.id}')">♻ Restore</button><button class="btn btn-red" onclick="delDoc('${d.id}')">🗑</button>`:''}</div></td></tr>`;
-  });
-  buildPager('archPager',list.length,AP,archPage,p=>{archPage=p;buildArchive(document.getElementById('archQ').value);});
+function toggleNotif() {
+  document.getElementById('notifPanel').classList.toggle('open');
 }
-function switchArchTab(tab,el){document.querySelectorAll('.a-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');archTab=tab;archPage=1;const m={all:'All Archived Documents',recent:'Recently Archived',pending:'Pending Archival'};document.getElementById('archTblTitle').textContent=m[tab];buildArchive();}
-function sortArch(){archSort=archSort==='desc'?'asc':'desc';buildArchive(document.getElementById('archQ').value);toast('↕','Sorted','Date '+(archSort==='asc'?'ascending':'descending'));}
-function runRetentionCheck(){toast('🔍','Retention Check','3 documents approaching retention limit. Review recommended.');}
 
-// ═══════════════════════════════════════
-//  ACCESS CONTROL
-// ═══════════════════════════════════════
-function buildUsers(list){
-  document.getElementById('usersGrid').innerHTML=list.map(u=>{
-    const isA=ROLE==='Admin',isSelf=u.user===UNAME;
-    return`<div class="user-card">
-      <div class="uc-hd"><div class="uc-av" style="background:${u.av}">${u.ini}</div><div><div class="uc-name">${u.name}</div><div class="uc-dept">${u.dept}</div></div></div>
-      <div class="uc-role r-${u.role.toLowerCase()}">${u.role==='Admin'?'🔴':u.role==='Staff'?'🔵':'⚪'} ${u.role}</div>
-      <div class="perms-wrap">${u.perms.map(p=>`<span class="perm">${p}</span>`).join('')}</div>
-      <div class="status-dot" style="color:${u.status==='Active'?'var(--green)':'var(--red)'}">● ${u.status}</div>
-      <div class="btn-row">
-        ${isA?`<button class="btn btn-blue" onclick="openEditUser(${u.id})">✏ Edit</button>`:''}
-        ${isA?`<button class="btn" onclick="changeRole(${u.id})">⇄ Role</button>`:''}
-        ${isA&&!isSelf?`<button class="btn btn-red" onclick="suspendUser(${u.id})">${u.status==='Active'?'Suspend':'Activate'}</button>`:''}
-      </div>
-    </div>`;
-  }).join('');
+function closeNotif() {
+  document.getElementById('notifPanel').classList.remove('open');
 }
-function filterUsers(role){buildUsers(role==='all'?USERS:USERS.filter(u=>u.role===role));}
-function searchUsers(q){buildUsers(USERS.filter(u=>(u.name+u.user+u.dept).toLowerCase().includes(q.toLowerCase())));}
-function openEditUser(id){const u=USERS.find(x=>x.id===id);if(!u)return;editUserId=id;document.getElementById('euName').value=u.name;document.getElementById('euUser').value=u.user;document.getElementById('euRole').value=u.role;document.getElementById('euDept').value=u.dept;document.getElementById('euEmail').value=u.email;document.getElementById('euStatus').value=u.status;openModal('editUserModal');}
-function saveEditUser(){const u=USERS.find(x=>x.id===editUserId);if(!u)return;u.name=document.getElementById('euName').value||u.name;u.user=document.getElementById('euUser').value||u.user;u.role=document.getElementById('euRole').value;u.dept=document.getElementById('euDept').value||u.dept;u.email=document.getElementById('euEmail').value||u.email;u.status=document.getElementById('euStatus').value;addLog(`Edited user: ${u.name}`,UNAME,'Upload','✏️','rgba(139,92,246,.1)');buildUsers(USERS);toast('✅','Saved',u.name+' updated');closeModal('editUserModal');}
-function changeRole(id){const u=USERS.find(x=>x.id===id);if(!u)return;const roles=['Admin','Staff','Viewer'],next=roles[(roles.indexOf(u.role)+1)%3];showConfirm('Change Role','👤',`Change ${u.name}'s role from ${u.role} to ${next}?`,()=>{u.role=next;u.perms=next==='Admin'?['Upload','Edit','Delete','View','Archive','Manage Users']:next==='Staff'?['Upload','Edit','View','Archive','Submit Compliance']:['View','Download'];addLog(`Role changed: ${u.name} → ${next}`,UNAME,'Upload','👤','rgba(14,165,233,.1)');buildUsers(USERS);toast('✅','Role Changed',`${u.name} is now ${next}`);});}
-function suspendUser(id){const u=USERS.find(x=>x.id===id);if(!u)return;showConfirm(u.status==='Active'?'Suspend User':'Reactivate User','⚠️',`${u.status==='Active'?'Suspend':'Reactivate'} account for ${u.name}?`,()=>{u.status=u.status==='Active'?'Suspended':'Active';addLog(`${u.status==='Active'?'Activated':'Suspended'}: ${u.name}`,UNAME,'Upload','⚠️','rgba(239,68,68,.1)');buildUsers(USERS);toast('✅','Done',u.name+' account updated');});}
-function addUser(){const n=document.getElementById('nuName').value.trim(),u=document.getElementById('nuUser').value.trim();if(!n||!u){toast('⚠️','Required','Name and username required');return;}const role=document.getElementById('nuRole').value;const cs=['linear-gradient(135deg,#0ea5e9,#0369a1)','linear-gradient(135deg,#10b981,#047857)','linear-gradient(135deg,#f97316,#b45309)'];USERS.push({id:USERS.length+1,name:n,user:u,dept:document.getElementById('nuDept').value||'PSED',role,email:document.getElementById('nuEmail').value||u+'@psed.gov.ph',status:'Active',av:cs[Math.floor(Math.random()*cs.length)],ini:n.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase(),perms:role==='Admin'?['Upload','Edit','Delete','View','Archive','Manage Users']:role==='Staff'?['Upload','Edit','View','Archive','Submit Compliance']:['View','Download']});addLog(`New user: ${n} (${role})`,UNAME,'Upload','👤','rgba(14,165,233,.1)');buildUsers(USERS);toast('✅','User Added',n+' ('+role+')');closeModal('addUserModal');['nuName','nuUser','nuDept','nuEmail','nuPwd'].forEach(i=>document.getElementById(i).value='');}
-function exportUsers(){toast('📥','Exported','User list exported as CSV');}
 
-// ═══════════════════════════════════════
-//  LOGS
-// ═══════════════════════════════════════
-function addLog(act,usr,type,ico,bg){LOGS.unshift({act,usr,type,time:new Date().toISOString().slice(0,16).replace('T',' '),ico,bg});if(document.getElementById('pg-logs').classList.contains('active'))renderLogs();}
-function renderLogs(){
-  const fa=document.getElementById('logAct').value,fu=document.getElementById('logUsr').value,fd=document.getElementById('logDate').value;
-  const fl=LOGS.filter(l=>(!fa||l.type===fa||l.act.toLowerCase().includes(fa.toLowerCase()))&&(!fu||l.usr===fu)&&(!fd||l.time.startsWith(fd)));
-  document.getElementById('logCount').textContent=fl.length+' records';
-  const paged=fl.slice((logsPage-1)*LP,logsPage*LP);
-  document.getElementById('logsList').innerHTML=paged.length?paged.map(l=>`<div class="log-item"><div class="log-ico" style="background:${l.bg}">${l.ico}</div><div style="flex:1"><div class="log-act">${l.act}</div><div class="log-usr">by ${l.usr}</div></div><div class="log-time">${l.time}</div></div>`).join(''):`<div class="empty-state"><div class="empty-ico">📋</div><div>No log entries found</div></div>`;
-  buildPager('logsPager',fl.length,LP,logsPage,p=>{logsPage=p;renderLogs();});
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
 }
-function resetLogFilters(){['logAct','logUsr'].forEach(i=>document.getElementById(i).value='');document.getElementById('logDate').value='';renderLogs();}
-function confirmClearLogs(){showConfirm('Clear All Logs','⚠️','This will permanently delete all activity logs.',()=>{LOGS.length=0;renderLogs();toast('🗑','Cleared','All logs removed');});}
 
-// ═══════════════════════════════════════
-//  SETTINGS
-// ═══════════════════════════════════════
-function saveAllSettings(){toast('💾','All Settings Saved','All configurations updated successfully');}
-function saveProfile(){const n=document.getElementById('profName').value;addLog('Updated profile settings',UNAME,'Upload','⚙️','rgba(100,116,139,.1)');toast('✅','Profile Saved',n+' profile updated');document.getElementById('profPwd').value='';}
-function runBackup(){toast('💾','Backup Started','Creating system backup…');setTimeout(()=>toast('✅','Backup Complete','All data backed up'),2500);}
-function confirmReset(){showConfirm('Reset System','⚠️','Reset ALL system settings to defaults? Data will not be deleted.',()=>toast('⚙️','Reset','Settings restored to defaults'));}
-function confirmPurge(){showConfirm('Purge Expired','⚠️','Permanently delete all archived documents past their retention period?',()=>toast('🗑','Purged','Expired documents removed'));}
-
-// ═══════════════════════════════════════
-//  NOTIFICATIONS
-// ═══════════════════════════════════════
-function buildNotifs(){
-  const el=document.getElementById('notifList');
-  if(!NOTIFS.length){el.innerHTML=`<div class="np-empty">No notifications</div>`;document.getElementById('notifBtn').classList.remove('dot');return;}
-  el.innerHTML=NOTIFS.map((n,i)=>`<div class="np-item" onclick="dismissNotif(${i})"><div class="np-dot" style="background:${n.col}"></div><div><div class="np-txt">${n.txt}</div><div class="np-time">${n.time}</div></div></div>`).join('');
-  document.getElementById('notifBtn').classList.toggle('dot',NOTIFS.length>0);
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
 }
-function dismissNotif(i){NOTIFS.splice(i,1);buildNotifs();}
-function clearNotifs(){NOTIFS=[];buildNotifs();closeNotif();}
-function toggleNotif(){document.getElementById('notifPanel').classList.toggle('open');}
-function closeNotif(){document.getElementById('notifPanel').classList.remove('open');}
 
-// ═══════════════════════════════════════
-//  MODALS / CONFIRM / PAGER / TOAST
-// ═══════════════════════════════════════
-function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-window.addEventListener('click',e=>{
-  if(e.target.classList.contains('overlay'))e.target.classList.remove('open');
-  if(!e.target.closest('#notifPanel')&&!e.target.closest('#notifBtn'))closeNotif();
+window.addEventListener('click', event => {
+  if (event.target.classList.contains('overlay')) event.target.classList.remove('open');
+  if (!event.target.closest('#notifPanel') && !event.target.closest('#notifBtn')) closeNotif();
 });
-function showConfirm(title,ico,msg,cb){
-  document.getElementById('cfIco').textContent=ico;document.getElementById('cfTitle').textContent=title;document.getElementById('cfMsg').textContent=msg;
-  confirmCB=cb;document.getElementById('cfOk').onclick=()=>{confirmCB&&confirmCB();closeModal('confirmModal');};
+
+function showConfirm(title, icon, message, callback) {
+  document.getElementById('cfIco').textContent = icon;
+  document.getElementById('cfTitle').textContent = title;
+  document.getElementById('cfMsg').textContent = message;
+  confirmCB = callback;
+  document.getElementById('cfOk').onclick = () => {
+    if (confirmCB) confirmCB();
+    closeModal('confirmModal');
+  };
   openModal('confirmModal');
 }
-function buildPager(cid,total,pp,cur,onP){
-  const pgs=Math.ceil(total/pp);const el=document.getElementById(cid);
-  if(pgs<=1){el.innerHTML='';return;}
-  let h=`<span class="pg-info">Page ${cur}/${pgs}</span>`;
-  h+=`<button class="pg-btn" onclick="(${onP.toString()})(1)" ${cur===1?'disabled':''}>«</button>`;
-  h+=`<button class="pg-btn" onclick="(${onP.toString()})(${cur-1})" ${cur===1?'disabled':''}>‹</button>`;
-  for(let p=Math.max(1,cur-1);p<=Math.min(pgs,cur+1);p++)h+=`<button class="pg-btn${p===cur?' on':''}" onclick="(${onP.toString()})(${p})">${p}</button>`;
-  h+=`<button class="pg-btn" onclick="(${onP.toString()})(${cur+1})" ${cur===pgs?'disabled':''}>›</button>`;
-  h+=`<button class="pg-btn" onclick="(${onP.toString()})(${pgs})" ${cur===pgs?'disabled':''}>»</button>`;
-  el.innerHTML=h;
+
+function buildPager(containerId, total, perPage, current, onPage) {
+  const pages = Math.ceil(total / perPage);
+  const container = document.getElementById(containerId);
+  if (pages <= 1) return container.innerHTML = '';
+  let html = `<span class="pg-info">Page ${current}/${pages}</span>`;
+  html += `<button class="pg-btn" onclick="(${onPage.toString()})(1)" ${current === 1 ? 'disabled' : ''}>«</button>`;
+  html += `<button class="pg-btn" onclick="(${onPage.toString()})(${current - 1})" ${current === 1 ? 'disabled' : ''}>‹</button>`;
+  for (let page = Math.max(1, current - 1); page <= Math.min(pages, current + 1); page += 1) html += `<button class="pg-btn${page === current ? ' on' : ''}" onclick="(${onPage.toString()})(${page})">${page}</button>`;
+  html += `<button class="pg-btn" onclick="(${onPage.toString()})(${current + 1})" ${current === pages ? 'disabled' : ''}>›</button>`;
+  html += `<button class="pg-btn" onclick="(${onPage.toString()})(${pages})" ${current === pages ? 'disabled' : ''}>»</button>`;
+  container.innerHTML = html;
 }
-let _tt;
-function toast(ico,ttl,msg,delay=0){
-  clearTimeout(_tt);const t=document.getElementById('toast');
-  setTimeout(()=>{document.getElementById('tIco').textContent=ico;document.getElementById('tTtl').textContent=ttl;document.getElementById('tMsg').textContent=msg||'';t.classList.add('show');_tt=setTimeout(()=>t.classList.remove('show'),3200);},delay);
+
+let toastTimer;
+function toast(icon, title, message, delay = 0) {
+  clearTimeout(toastTimer);
+  const el = document.getElementById('toast');
+  setTimeout(() => {
+    document.getElementById('tIco').textContent = icon;
+    document.getElementById('tTtl').textContent = title;
+    document.getElementById('tMsg').textContent = message || '';
+    el.classList.add('show');
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+  }, delay);
 }
-document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') document.querySelectorAll('.overlay.open').forEach(overlay => overlay.classList.remove('open'));
+});
+
+async function saveStorageSettings() {
+  if (ROLE !== 'PSED Admin') return toast('🚫', 'Denied', 'Only PSED Admin can update storage settings.');
+  const formData = new FormData();
+  formData.append('action', 'save_storage');
+  formData.append('storage_root', document.getElementById('storageRoot').value.trim());
+  formData.append('internal_subdir', document.getElementById('internalSubdir').value.trim());
+  formData.append('prime_subdir', document.getElementById('primeSubdir').value.trim());
+
+  try {
+    await apiJson('process/settingsProcess.php', { method: 'POST', body: formData });
+    await hydrateFromServer();
+    toast('✅', 'Saved', 'Storage settings updated.');
+  } catch (error) {
+    toast('⚠', 'Save Failed', error.message);
+  }
+}
+
+async function saveAllSettings() {
+  await saveStorageSettings();
+}
+
+async function saveProfile() {
+  const formData = new FormData();
+  formData.append('action', 'save_profile');
+  formData.append('full_name', document.getElementById('profName').value.trim());
+  formData.append('username', document.getElementById('profUser').value.trim());
+  formData.append('email', document.getElementById('profEmail').value.trim());
+  formData.append('old_password', document.getElementById('profOldPwd').value.trim());
+  formData.append('new_password', document.getElementById('profPwd').value.trim());
+
+  try {
+    await apiJson('process/settingsProcess.php', { method: 'POST', body: formData });
+    document.getElementById('profOldPwd').value = '';
+    document.getElementById('profPwd').value = '';
+    await hydrateFromServer();
+    toast('✅', 'Profile Saved', 'Profile updated successfully.');
+  } catch (error) {
+    toast('⚠', 'Save Failed', error.message);
+  }
+}
+
+async function addUser() {
+  const name = document.getElementById('nuName').value.trim();
+  const userName = document.getElementById('nuUser').value.trim();
+  const access = document.getElementById('nuAccess').value;
+  const password = document.getElementById('nuPwd').value.trim();
+  if (!name || !userName || !password) return toast('⚠', 'Required', 'Name, username, and temporary password are required.');
+
+  const formData = new FormData();
+  formData.append('action', 'create');
+  formData.append('full_name', name);
+  formData.append('username', userName);
+  formData.append('password', password);
+  formData.append('access_group', access);
+  formData.append('department', document.getElementById('nuDept').value.trim());
+  formData.append('agency_name', document.getElementById('nuAgency').value.trim());
+  formData.append('email', document.getElementById('nuEmail').value.trim());
+  getUserRoles('nu').forEach(role => formData.append('roles[]', role));
+
+  try {
+    await apiJson('process/userProcess.php', { method: 'POST', body: formData });
+    ['nuName', 'nuUser', 'nuDept', 'nuAgency', 'nuEmail', 'nuPwd'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.getElementById('nuAccess').value = 'Internal';
+    renderRoleCheckboxes('nuRolesBox');
+    toggleUserRoleFields('nu');
+    await hydrateFromServer();
+    toast('✅', 'User Added', `${name} (${access})`);
+    closeModal('addUserModal');
+  } catch (error) {
+    toast('⚠', 'Create Failed', error.message);
+  }
+}
+
+async function saveEditUser() {
+  const formData = new FormData();
+  formData.append('action', 'update');
+  formData.append('id', String(editUserId));
+  formData.append('full_name', document.getElementById('euName').value.trim());
+  formData.append('username', document.getElementById('euUser').value.trim());
+  formData.append('access_group', document.getElementById('euAccess').value);
+  formData.append('department', document.getElementById('euDept').value.trim());
+  formData.append('agency_name', document.getElementById('euAgency').value.trim());
+  formData.append('email', document.getElementById('euEmail').value.trim());
+  formData.append('status', document.getElementById('euStatus').value);
+  getUserRoles('eu').forEach(role => formData.append('roles[]', role));
+
+  try {
+    await apiJson('process/userProcess.php', { method: 'POST', body: formData });
+    await hydrateFromServer();
+    toast('✅', 'Saved', 'User updated.');
+    closeModal('editUserModal');
+  } catch (error) {
+    toast('⚠', 'Save Failed', error.message);
+  }
+}
+
+function suspendUser(id) {
+  const user = USERS.find(item => item.id === id);
+  if (!user) return;
+  showConfirm(user.status === 'Active' ? 'Suspend User' : 'Reactivate User', '⚠', `${user.status === 'Active' ? 'Suspend' : 'Reactivate'} account for ${user.name}?`, () => {
+    const formData = new FormData();
+    formData.append('action', 'toggle_status');
+    formData.append('id', String(id));
+    apiJson('process/userProcess.php', { method: 'POST', body: formData })
+      .then(() => hydrateFromServer())
+      .then(() => toast('✅', 'Done', `${user.name} account updated.`))
+      .catch(error => toast('⚠', 'Update Failed', error.message));
+  });
+}
+
+async function submitPrime() {
+  if (ROLE !== 'Agency') return toast('🚫', 'Denied', 'Only agency accounts can upload ERs.');
+  if (!primeFile || !isPrimeFolderSelectionComplete()) return toast('⚠', 'Required', 'Select the PRIME-HRM hierarchy, indicator, and attach a PDF.');
+  const indicator = document.getElementById('prIndicator').value;
+  const indicatorCode = indicator.split(' - ')[0] || INDICATOR_CODE_PLACEHOLDER;
+  const formData = new FormData();
+  formData.append('action', 'upload');
+  formData.append('core_area', document.getElementById('prFolder1').value);
+  formData.append('pillar', document.getElementById('prFolder2').value);
+  formData.append('pillar_element', document.getElementById('prFolder3').value);
+  formData.append('indicator_code', indicatorCode);
+  formData.append('indicator_label', indicator);
+  formData.append('file', primeFile);
+
+  try {
+    const result = await apiJson('process/primeProcess.php', { method: 'POST', body: formData });
+    NOTIFS.unshift({ txt: `PRIME-HRM submission received from ${getPrimeAgencyName()}`, time: 'Just now', col: 'var(--green)' });
+    clearPrimeFile();
+    renderPrimeFolderSelectors();
+    await hydrateFromServer();
+    toast('✅', 'Submitted', `${result.prime_submission.stored_filename} added to My Submissions.`);
+  } catch (error) {
+    toast('⚠', 'Submission Failed', error.message);
+  }
+}
+
+function buildAgencyDashboard() {
+  const statsHost = document.getElementById('agencyDashStats');
+  const bannerHost = document.getElementById('agencyDashBanner');
+  const tableHost = document.getElementById('agencyDashTbl');
+  const countHost = document.getElementById('agencyDashCount');
+  if (!statsHost || !bannerHost || !tableHost || !countHost) return;
+
+  const mySubs = PRIME_SUBMISSIONS.filter(item => item.account === UNAME);
+  const submitted = mySubs.filter(item => item.status === 'submitted').length;
+  const inReview = mySubs.filter(item => item.status === 'under review').length;
+  const received = mySubs.filter(item => item.status === 'received').length;
+
+  bannerHost.innerHTML = `<div class="info-banner" style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.18);"><span style="font-size:18px">📁</span><div>${getPrimeAgencyName()} is signed in. This workspace is limited to PRIME-HRM Evidence Requirements only.</div></div>`;
+  statsHost.innerHTML = `
+    <div class="stat-card" style="--sc:var(--accent);cursor:default"><div class="sc-lbl">My Submissions</div><div class="sc-val" style="color:var(--accent)">${mySubs.length}</div><div class="sc-sub">All uploaded ERs</div><div class="sc-ico">📎</div></div>
+    <div class="stat-card" style="--sc:var(--yellow);cursor:default"><div class="sc-lbl">Submitted / In Review</div><div class="sc-val" style="color:var(--yellow)">${submitted + inReview}</div><div class="sc-sub">Pending PSED action</div><div class="sc-ico">⏳</div></div>
+    <div class="stat-card" style="--sc:var(--green);cursor:default"><div class="sc-lbl">Received</div><div class="sc-val" style="color:var(--green)">${received}</div><div class="sc-sub">Accepted submissions</div><div class="sc-ico">✅</div></div>
+  `;
+  countHost.textContent = `${mySubs.length} submission(s)`;
+  tableHost.innerHTML = mySubs.length ? mySubs.slice(0, 6).map(item => `
+    <tr>
+      <td class="mono-sm">${item.id}</td>
+      <td>${item.savedFileName}</td>
+      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${item.folderPath}">${item.folderPath}</td>
+      <td class="mono-sm">${item.submitted}</td>
+      <td><span class="badge b-${item.status === 'received' ? 'approved' : item.status === 'under review' ? 'processing' : 'submitted'}">${item.status}</span></td>
+      <td><div class="btn-row"><button class="btn btn-blue" onclick="viewPrimeSubmission('${item.id}')">👁 View</button><button class="btn" onclick="downloadPrimeSubmission('${item.id}')">⬇ Download</button></div></td>
+    </tr>
+  `).join('') : `<tr><td colspan="6"><div class="empty-state"><div class="empty-ico">📭</div><div>No PRIME-HRM submissions yet.</div></div></td></tr>`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  hydrateFromServer();
+});
