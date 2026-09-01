@@ -139,44 +139,6 @@ seedUser(
     null
 );
 
-seedUser(
-    $pdo,
-    'division.chief',
-    'ChangeMe123!',
-    'Division Chief',
-    'division.chief@ddas.local',
-    'Internal',
-    'PSED',
-    null,
-    ['Division Chief', 'Management Committee']
-);
-
-seedUser(
-    $pdo,
-    'psed.staff',
-    'ChangeMe123!',
-    'PSED Staff',
-    'psed.staff@ddas.local',
-    'Internal',
-    'PSED',
-    null,
-    ['Division Personnel', 'Divisions']
-);
-
-seedUser(
-    $pdo,
-    'cgo.bago',
-    'ChangeMe123!',
-    'CGO Bago Agency Account',
-    'cgo.bago@agency.local',
-    'Agency',
-    'Agency',
-    'CGO Bago'
-);
-
 echo "DDAS database installation completed.\n";
-echo "Seed accounts:\n";
+echo "Default account:\n";
 echo "  sys.admin / ChangeMe123!\n";
-echo "  division.chief / ChangeMe123!\n";
-echo "  psed.staff / ChangeMe123!\n";
-echo "  cgo.bago / ChangeMe123!\n";

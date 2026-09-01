@@ -4,16 +4,13 @@ Digital Document Archiving System (DDAS) is a web-based document workspace for t
 
 ## 1. Default Login Accounts
 
-After running `database/install.php`, the system creates these seed accounts:
+After running `database/install.php` on a new database, the system creates one default administrator account:
 
 | Username | Default Password | Access Group | Intended Use |
 | --- | --- | --- | --- |
 | `sys.admin` | `ChangeMe123!` | PSED Admin | Main administrator account |
-| `division.chief` | `ChangeMe123!` | Internal | Internal PSED leadership/account user |
-| `psed.staff` | `ChangeMe123!` | Internal | Internal PSED staff user |
-| `cgo.bago` | `ChangeMe123!` | Agency | Sample agency account for PRIME-HRM uploads |
 
-Important: Change all default passwords immediately after installation. Seeded and newly created users are marked with `must_change_password = 1` in the database.
+Important: Change the default password immediately after installation. The default account and newly created users are marked with `must_change_password = 1` in the database.
 
 ## 2. User Access Groups
 
@@ -277,7 +274,7 @@ Treat the following as interface placeholders unless backend handlers are added:
 5. Change default passwords.
 6. Review storage settings.
 7. Create real PSED Admin, Internal, and Agency accounts.
-8. Suspend or remove unused seed accounts.
+8. Create real Internal and Agency accounts from User Management.
 9. Replace PRIME-HRM sample indicator codes with official mappings.
 10. Test document upload and PRIME-HRM upload using sample PDFs.
 
@@ -290,4 +287,3 @@ Treat the following as interface placeholders unless backend handlers are added:
 - Choose visibility roles carefully before uploading restricted documents.
 - Review activity logs regularly.
 - Avoid sharing administrator credentials.
-

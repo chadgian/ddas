@@ -53,16 +53,13 @@ Internal role names are defined in the `INTERNAL_ROLES` constant.
 6. Renames legacy `users` to `users_legacy_backup_YYYYMMDD_HHMMSS` when needed.
 7. Executes `database/schema.sql`.
 8. Seeds storage settings.
-9. Seeds four default users.
+9. Seeds one default administrator user.
 
-Seed accounts:
+Default account:
 
 - `sys.admin / ChangeMe123!`
-- `division.chief / ChangeMe123!`
-- `psed.staff / ChangeMe123!`
-- `cgo.bago / ChangeMe123!`
 
-All seed users are Active and have `must_change_password = 1`.
+The default user is Active and has `must_change_password = 1`.
 
 ## 4. Runtime Bootstrap
 
@@ -552,4 +549,3 @@ Recommended future automated tests:
 - Add database backup and restore procedures.
 - Add persistent exports/downloads only after authorization checks.
 - Review all error handling so sensitive details are not exposed to users.
-
